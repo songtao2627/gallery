@@ -1,92 +1,125 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 
-interface WaveProps {
+gsap.registerPlugin(useGSAP);
+
+interface WaveConfig {
     color: string;
     speed: number;
     amplitude: number;
     frequency: number;
     yOffset: number;
     opacity: number;
+    direction: 1 | -1; // New: Wave direction
+}
+
+interface ParticleConfig {
+    size: number;
+    speed: number;
+    offset: number; // Initial x offset (0-1)
+    waveIndex: number; // Which wave to follow
+    color: string;
 }
 
 interface Theme {
     id: string;
     label: string;
-    bg: string;       // css background-color
-    text: string;     // css color for text
-    title: string;    // css color for titles
-    waves: WaveProps[];
+    bg: string;
+    text: string;
+    title: string;
+    waves: WaveConfig[];
+    particles: ParticleConfig[];
 }
 
 const themes: Theme[] = [
     {
         id: 'fresh',
         label: '清新自然',
-        bg: '#f0fdf4', // Light green-ish white
-        text: '#14532d', // Dark green
-        title: '#166534', // Green 700
+        bg: '#f0fdf4',
+        text: '#14532d',
+        title: '#166534',
         waves: [
-            { color: 'rgba(132, 250, 176, 0.4)', speed: 0.0002, amplitude: 50, frequency: 0.005, yOffset: 100, opacity: 0.4 }, // Fresh Lime
-            { color: 'rgba(143, 211, 244, 0.4)', speed: 0.0003, amplitude: 70, frequency: 0.004, yOffset: 200, opacity: 0.4 }, // Fresh Cyan
-            { color: 'rgba(252, 203, 144, 0.4)', speed: 0.0001, amplitude: 40, frequency: 0.006, yOffset: 300, opacity: 0.4 }, // Fresh Lemon
-            { color: 'rgba(0, 147, 233, 0.3)', speed: 0.0004, amplitude: 60, frequency: 0.003, yOffset: 400, opacity: 0.3 }, // Fresh Teal
+            { color: 'rgba(132, 250, 176, 0.4)', speed: 0.2, amplitude: 50, frequency: 0.005, yOffset: 100, opacity: 0.4, direction: 1 },
+            { color: 'rgba(143, 211, 244, 0.4)', speed: 0.3, amplitude: 70, frequency: 0.004, yOffset: 150, opacity: 0.4, direction: -1 },
+            { color: 'rgba(252, 203, 144, 0.4)', speed: 0.15, amplitude: 40, frequency: 0.006, yOffset: 250, opacity: 0.4, direction: 1 },
+            { color: 'rgba(0, 147, 233, 0.3)', speed: 0.4, amplitude: 60, frequency: 0.003, yOffset: 350, opacity: 0.3, direction: -1 },
+        ],
+        particles: [
+            { size: 4, speed: 0.001, offset: 0.1, waveIndex: 1, color: '#ffffff' },
+            { size: 6, speed: 0.0015, offset: 0.4, waveIndex: 0, color: 'rgba(255,255,255,0.8)' },
+            { size: 3, speed: 0.0008, offset: 0.7, waveIndex: 2, color: '#ffffff' },
         ]
     },
     {
         id: 'cyber',
         label: '赛博朋克',
-        bg: '#0f172a', // Slate 900
-        text: '#e2e8f0', // Slate 200
-        title: '#f472b6', // Pink 400
+        bg: '#0f172a',
+        text: '#e2e8f0',
+        title: '#f472b6',
         waves: [
-            { color: 'rgba(255, 20, 147, 0.5)', speed: 0.00025, amplitude: 80, frequency: 0.004, yOffset: 100, opacity: 0.5 }, // Neon Pink
-            { color: 'rgba(0, 255, 255, 0.5)', speed: 0.00035, amplitude: 60, frequency: 0.005, yOffset: 200, opacity: 0.5 }, // Electric Cyan
-            { color: 'rgba(255, 235, 59, 0.6)', speed: 0.00015, amplitude: 40, frequency: 0.006, yOffset: 300, opacity: 0.6 }, // Sunny Yellow
-            { color: 'rgba(138, 43, 226, 0.4)', speed: 0.00045, amplitude: 70, frequency: 0.003, yOffset: 400, opacity: 0.4 }, // Vivid Purple
+            { color: 'rgba(255, 20, 147, 0.5)', speed: 0.25, amplitude: 80, frequency: 0.004, yOffset: 100, opacity: 0.5, direction: 1 },
+            { color: 'rgba(0, 255, 255, 0.5)', speed: 0.35, amplitude: 60, frequency: 0.005, yOffset: 200, opacity: 0.5, direction: -1 },
+            { color: 'rgba(255, 235, 59, 0.6)', speed: 0.15, amplitude: 40, frequency: 0.006, yOffset: 300, opacity: 0.6, direction: 1 },
+            { color: 'rgba(138, 43, 226, 0.4)', speed: 0.45, amplitude: 70, frequency: 0.003, yOffset: 400, opacity: 0.4, direction: -1 },
+        ],
+        particles: [
+            { size: 3, speed: 0.002, offset: 0.2, waveIndex: 1, color: '#00ffff' },
+            { size: 4, speed: 0.003, offset: 0.6, waveIndex: 0, color: '#ff00ff' },
+            { size: 2, speed: 0.001, offset: 0.8, waveIndex: 3, color: '#ffff00' },
         ]
     },
     {
         id: 'acid',
         label: '酸性波普',
-        bg: '#171717', // Neutral 900
-        text: '#fef08a', // Yellow 200
-        title: '#bef264', // Lime 400
+        bg: '#171717',
+        text: '#fef08a',
+        title: '#bef264',
         waves: [
-            { color: 'rgba(57, 255, 20, 0.5)', speed: 0.0002, amplitude: 60, frequency: 0.005, yOffset: 120, opacity: 0.5 }, // Lime Punch
-            { color: 'rgba(0, 240, 255, 0.5)', speed: 0.0003, amplitude: 80, frequency: 0.004, yOffset: 220, opacity: 0.5 }, // Hot Turquoise
-            { color: 'rgba(0, 110, 255, 0.5)', speed: 0.0004, amplitude: 50, frequency: 0.003, yOffset: 320, opacity: 0.5 }, // Electric Blue
-            { color: 'rgba(255, 255, 0, 0.5)', speed: 0.00015, amplitude: 70, frequency: 0.006, yOffset: 420, opacity: 0.5 }, // Highlighter Yellow
+            { color: 'rgba(57, 255, 20, 0.5)', speed: 0.2, amplitude: 60, frequency: 0.005, yOffset: 120, opacity: 0.5, direction: 1 },
+            { color: 'rgba(0, 240, 255, 0.5)', speed: 0.3, amplitude: 80, frequency: 0.004, yOffset: 220, opacity: 0.5, direction: -1 },
+            { color: 'rgba(0, 110, 255, 0.5)', speed: 0.4, amplitude: 50, frequency: 0.003, yOffset: 320, opacity: 0.5, direction: 1 },
+            { color: 'rgba(255, 255, 0, 0.5)', speed: 0.15, amplitude: 70, frequency: 0.006, yOffset: 420, opacity: 0.5, direction: -1 },
+        ],
+        particles: [
+            { size: 5, speed: 0.002, offset: 0.3, waveIndex: 0, color: '#39ff14' },
+            { size: 4, speed: 0.002, offset: 0.5, waveIndex: 1, color: '#00f0ff' },
         ]
     },
     {
         id: 'sunset',
         label: '温暖日落',
-        bg: '#fff7ed', // Orange 50
-        text: '#7c2d12', // Orange 900
-        title: '#c2410c', // Orange 700
+        bg: '#fff7ed',
+        text: '#7c2d12',
+        title: '#c2410c',
         waves: [
-            { color: 'rgba(255, 107, 0, 0.5)', speed: 0.00025, amplitude: 70, frequency: 0.004, yOffset: 150, opacity: 0.5 }, // Bright Orange
-            { color: 'rgba(255, 0, 128, 0.4)', speed: 0.00035, amplitude: 50, frequency: 0.005, yOffset: 250, opacity: 0.4 }, // Magenta Pop
-            { color: 'rgba(223, 255, 0, 0.6)', speed: 0.00015, amplitude: 60, frequency: 0.006, yOffset: 350, opacity: 0.6 }, // Laser Lemon
-            { color: 'rgba(0, 255, 170, 0.4)', speed: 0.0004, amplitude: 80, frequency: 0.003, yOffset: 450, opacity: 0.4 }, // Aqua
-        ]
+            { color: 'rgba(255, 107, 0, 0.5)', speed: 0.25, amplitude: 70, frequency: 0.004, yOffset: 150, opacity: 0.5, direction: 1 },
+            { color: 'rgba(255, 0, 128, 0.4)', speed: 0.35, amplitude: 50, frequency: 0.005, yOffset: 250, opacity: 0.4, direction: -1 },
+            { color: 'rgba(223, 255, 0, 0.6)', speed: 0.15, amplitude: 60, frequency: 0.006, yOffset: 350, opacity: 0.6, direction: 1 },
+            { color: 'rgba(0, 255, 170, 0.4)', speed: 0.4, amplitude: 80, frequency: 0.003, yOffset: 450, opacity: 0.4, direction: -1 },
+        ],
+        particles: []
     }
 ];
 
 const RibbonBackground: React.FC = () => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const containerRef = useRef<SVGSVGElement>(null);
     const [currentTheme, setCurrentTheme] = useState<Theme>(themes[0]);
+    const pathsRef = useRef<(SVGPathElement | null)[]>([]);
+    const particlesRef = useRef<(SVGCircleElement | null)[]>([]);
 
-    useEffect(() => {
-        // Apply global theme styles
-        document.body.style.backgroundColor = currentTheme.bg;
-        document.body.style.color = currentTheme.text;
-        document.body.style.transition = 'background-color 0.5s ease, color 0.5s ease';
+    // Theme application effect (Document styles)
+    useGSAP(() => {
+        gsap.to(document.body, {
+            backgroundColor: currentTheme.bg,
+            color: currentTheme.text,
+            duration: 0.5
+        });
 
         document.documentElement.style.setProperty('--theme-title', currentTheme.title);
         document.documentElement.style.setProperty('--theme-text', currentTheme.text);
 
-        // CSS Injection for common elements to ensure theme application
+        // Fallback or additional global styles if needed
         const styleId = 'dynamic-theme-style';
         let styleTag = document.getElementById(styleId);
         if (!styleTag) {
@@ -98,70 +131,101 @@ const RibbonBackground: React.FC = () => {
             h1, h2, h3, h4, h5, h6 { color: var(--theme-title) !important; transition: color 0.5s ease; }
             p, span, div, li, a { color: var(--theme-text); transition: color 0.5s ease; }
             a { text-decoration-color: var(--theme-title); }
-            /* Force transition on everything for smooth switch */
-            * { transition-property: background-color, color, border-color; transition-duration: 0.3s; }
+            * { transition-property: border-color; transition-duration: 0.3s; }
         `;
+    }, { dependencies: [currentTheme] });
 
-    }, [currentTheme]);
+    // Animation Logic
+    useGSAP(() => {
+        if (!containerRef.current) return;
 
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+        const width = window.innerWidth;
+        const height = window.innerHeight;
 
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        // Entrance Application
+        const tl = gsap.timeline();
 
-        let animationFrameId: number;
-        let time = 0;
+        // Animate paths entering
+        tl.from(pathsRef.current, {
+            y: 100,
+            opacity: 0,
+            duration: 1.5,
+            stagger: 0.1,
+            ease: "power3.out"
+        }, 0);
 
-        const resize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        };
-
-        const drawWave = (wave: WaveProps) => {
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height);
-
-            for (let x = 0; x < canvas.width; x++) {
-                // Sine wave formula: y = amplitude * sin(frequency * x + time) + center
-                const y = Math.sin(x * wave.frequency + time * wave.speed * 100) * wave.amplitude + (canvas.height / 2) + wave.yOffset;
-                ctx.lineTo(x, y);
-            }
-
-            ctx.lineTo(canvas.width, canvas.height); // Close path at bottom right
-            ctx.lineTo(0, canvas.height); // Close path at bottom left
-            ctx.fillStyle = wave.color;
-            ctx.fill();
-            ctx.closePath();
-        };
+        // Render loop
+        const startTime = Date.now();
 
         const render = () => {
-            time++;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const now = (Date.now() - startTime) * 0.001; // time in seconds
 
-            // Re-drawing with new colors happens automatically because we iterate over currentTheme.waves
-            currentTheme.waves.forEach(wave => {
-                drawWave(wave);
+            // 1. Update Waves
+            currentTheme.waves.forEach((wave, i) => {
+                const pathEl = pathsRef.current[i];
+                if (!pathEl) return;
+
+                // Build path string
+                // Using fewer points for performance, using Bezier curves would be smoother but sine is easy
+                // To optimize, we calculate points ~every 10px
+                let d = `M 0 ${height}`; // Start bottom-left
+
+                // We need to trace the top surface of the wave
+                const step = 20; // px steps
+                for (let x = 0; x <= width + step; x += step) {
+                    // Sine calculation
+                    // phase shift = time * speed
+                    const timeComponent = now * wave.speed;
+                    // direction
+                    const phase = wave.direction * timeComponent;
+
+                    const y = Math.sin(x * wave.frequency + phase) * wave.amplitude
+                        + (height / 2) + wave.yOffset;
+
+                    if (x === 0) d += ` L 0 ${y}`;
+                    else d += ` L ${x} ${y}`;
+                }
+
+                d += ` L ${width} ${height} Z`; // Close bottom-right and back to bottom-left
+                pathEl.setAttribute('d', d);
             });
 
-            animationFrameId = window.requestAnimationFrame(render);
+            // 2. Update Particles (Path Following)
+            currentTheme.particles.forEach((p, i) => {
+                const particleEl = particlesRef.current[i];
+                if (!particleEl) return;
+
+                const wave = currentTheme.waves[p.waveIndex];
+                if (!wave) return;
+
+                // Calculate x position based on infinite scroll or loop
+                // Position 0-1 across screen
+                let currentProgress = (p.offset + now * p.speed) % 1;
+                const x = currentProgress * width;
+
+                // Calculate Y exactly matching the wave equation at this X
+                const timeComponent = now * wave.speed;
+                const phase = wave.direction * timeComponent;
+                const y = Math.sin(x * wave.frequency + phase) * wave.amplitude
+                    + (height / 2) + wave.yOffset;
+
+                particleEl.setAttribute('cx', String(x));
+                particleEl.setAttribute('cy', String(y));
+            });
         };
 
-        window.addEventListener('resize', resize);
-        resize();
-        render();
+        gsap.ticker.add(render);
 
         return () => {
-            window.removeEventListener('resize', resize);
-            window.cancelAnimationFrame(animationFrameId);
+            gsap.ticker.remove(render);
         };
-    }, [currentTheme]);
+
+    }, { scope: containerRef, dependencies: [currentTheme] }); // Re-run when theme changes to reset timeline/elements
 
     return (
         <>
-            <canvas
-                ref={canvasRef}
+            <svg
+                ref={containerRef}
                 style={{
                     position: 'fixed',
                     top: 0,
@@ -170,10 +234,47 @@ const RibbonBackground: React.FC = () => {
                     height: '100%',
                     zIndex: -1,
                     pointerEvents: 'none',
-                    opacity: 0.6, // Subtle background
+                    // Using CSS transition for background color of the SVG itself if needed, but we animate body
                 }}
-            />
-            {/* Theme Switcher UI */}
+            >
+                <defs>
+                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                        <feMerge>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+
+                {/* Waves */}
+                {currentTheme.waves.map((wave, i) => (
+                    <path
+                        key={`wave-${i}`}
+                        ref={el => { pathsRef.current[i] = el; }}
+                        fill={wave.color}
+                        style={{
+                            transition: 'fill 0.5s ease', // Smooth color transition when theme changes
+                        }}
+                    />
+                ))}
+
+                {/* Particles */}
+                {currentTheme.particles.map((p, i) => (
+                    <circle
+                        key={`particle-${i}`}
+                        ref={el => { particlesRef.current[i] = el; }}
+                        r={p.size}
+                        fill={p.color}
+                        style={{
+                            filter: 'url(#glow)',
+                            opacity: 0.8
+                        }}
+                    />
+                ))}
+            </svg>
+
+            {/* Theme Switcher UI (Simplified from previous) */}
             <div style={{
                 position: 'fixed',
                 bottom: '20px',
