@@ -88,13 +88,13 @@ const SectionHeader: React.FC<{
   gradient: string;
 }> = ({ title, subtitle, gradient }) => (
   <div className="flex flex-col items-center mb-16 text-center relative section-header opacity-0 translate-y-8">
-    <span className="text-sm font-extrabold uppercase tracking-[0.3em] mb-3 text-slate-400">
+    <span className="text-xs font-extrabold uppercase tracking-[0.4em] mb-3 text-slate-400">
       {subtitle}
     </span>
-    <h2 className={`font-display text-5xl md:text-6xl font-black text-transparent bg-clip-text ${gradient} drop-shadow-sm pb-2`}>
+    <h2 className={`font-display text-5xl md:text-7xl font-black text-transparent bg-clip-text ${gradient} drop-shadow-sm pb-2 tracking-tighter`}>
       {title}
     </h2>
-    <div className="w-16 h-1 bg-slate-300 rounded-full mt-4"></div>
+    <div className="w-16 h-1.5 bg-slate-200 rounded-full mt-4"></div>
   </div>
 );
 
@@ -177,11 +177,11 @@ const App: React.FC = () => {
       <section className="relative pt-32 pb-4 z-10 w-full overflow-hidden mb-12">
         {/* Minimal Header for the Rail */}
         <div className="px-6 md:px-12 mb-6 flex items-end justify-between relative z-10">
-          <h1 className="font-display font-black text-4xl text-slate-900 leading-tight drop-shadow-sm">
+          <h1 className="font-display font-black text-5xl md:text-6xl text-slate-900 leading-none drop-shadow-sm tracking-tighter">
             Selected <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-teal-400">Works</span>
           </h1>
-          <div className="hidden md:flex items-center gap-2 text-slate-500 text-sm font-bold uppercase tracking-widest">
-            <span className="w-8 h-[3px] bg-pink-500"></span>
+          <div className="hidden md:flex items-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-[0.25em]">
+            <span className="w-8 h-[2px] bg-pink-500"></span>
             <span>Live Gallery</span>
           </div>
         </div>

@@ -131,7 +131,7 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
 
             {/* Floating Icon - Parallax Depth */}
             <div
-              className="absolute top-4 left-4 h-12 w-12 rounded-2xl bg-white/80 backdrop-blur flex items-center justify-center shadow-lg transition-transform duration-300 transform translate-z-30 group-hover:translate-z-50"
+              className="absolute top-4 left-4 h-12 w-12 rounded-2xl bg-white shadow-lg flex items-center justify-center transition-transform duration-300 transform translate-z-30 group-hover:translate-z-50"
               style={{ transformStyle: 'preserve-3d', transform: 'translateZ(30px)' }}
             >
               <span className={`material-symbols-rounded text-2xl ${project.color}`}>
@@ -151,17 +151,17 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
           {/* Text Container */}
           <div ref={contentRef} className="flex-1 pt-5 flex flex-col justify-between z-20 translate-z-10">
             <div>
-              <h3 className="text-xl font-extrabold text-[var(--theme-title)] leading-tight mb-2 tracking-tight group-hover:text-fresh-teal transition-colors drop-shadow-sm">
+              <h3 className="text-xl font-black text-[var(--theme-title)] leading-tight mb-2 tracking-tight group-hover:text-fresh-teal transition-colors drop-shadow-sm">
                 {project.title}
               </h3>
-              <p className="text-sm font-bold text-[var(--theme-text)] line-clamp-2 leading-relaxed opacity-90">
+              <p className="text-sm font-medium text-[var(--theme-text)] line-clamp-2 leading-relaxed opacity-90 tracking-normal">
                 {project.description}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2 mt-4">
               {project.tags.map(tag => (
-                <span key={tag} className="text-[10px] uppercase tracking-wider font-extrabold px-3 py-1 rounded-full bg-white/60 border border-current text-[var(--theme-text)] opacity-75 group-hover:border-fresh-cyan/30 group-hover:text-fresh-teal transition-colors">
+                <span key={tag} className="text-[10px] uppercase tracking-wider font-extrabold px-3 py-1 rounded-full bg-transparent border border-[var(--theme-text)]/40 text-[var(--theme-text)] opacity-90 group-hover:border-fresh-cyan/50 group-hover:text-fresh-teal transition-colors">
                   {tag}
                 </span>
               ))}
