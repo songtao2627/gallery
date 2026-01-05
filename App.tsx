@@ -1,17 +1,93 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import TiltCard from './components/TiltCard';
 import RibbonBackground from './components/RibbonBackground';
 import { PROJECTS } from './constants';
 import { Category } from './types';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { Draggable } from 'gsap/Draggable';
+
+gsap.registerPlugin(useGSAP, ScrollTrigger, Draggable);
+
+/* 
+  Helper function for horizontal loop (infinite scroll)
+  Source: https://gsap.com/docs/v3/HelperFunctions#helpers
+*/
+function horizontalLoop(items: HTMLElement[], config: any) {
+  items = gsap.utils.toArray(items);
+  config = config || {};
+  let tl = gsap.timeline({ repeat: config.repeat, paused: config.paused, defaults: { ease: "none" }, onReverseComplete: () => { tl.totalTime(tl.rawTime() + tl.duration() * 100); } }),
+    length = items.length,
+    startX = items[0].offsetLeft,
+    times: number[] = [],
+    widths: number[] = [],
+    xPercents: number[] = [],
+    curIndex = 0,
+    pixelsPerSecond = (config.speed || 1) * 100,
+    snap = config.snap === false ? (v: number) => v : gsap.utils.snap(config.snap || 1),
+    totalWidth: number,
+    curX: number,
+    distanceToStart: number,
+    distanceToLoop: number,
+    item: HTMLElement,
+    i: number;
+
+  gsap.set(items, { // convert "x" to "xPercent" to make things responsive, and populate the widths/xPercents Arrays to make lookups faster.
+    xPercent: (i, el) => {
+      let w = widths[i] = parseFloat(gsap.getProperty(el, "width", "px") as string);
+      xPercents[i] = snap(parseFloat(gsap.getProperty(el, "x", "px") as string) / w * 100 + gsap.getProperty(el, "xPercent") as number);
+      return xPercents[i];
+    }
+  });
+  gsap.set(items, { x: 0 });
+  totalWidth = items[length - 1].offsetLeft + xPercents[length - 1] / 100 * widths[length - 1] - startX + items[length - 1].offsetWidth * parseFloat(gsap.getProperty(items[length - 1], "scaleX") as string) + (parseFloat(config.paddingRight) || 0);
+  for (i = 0; i < length; i++) {
+    item = items[i];
+    curX = xPercents[i] / 100 * widths[i];
+    distanceToStart = item.offsetLeft + curX - startX;
+    distanceToLoop = distanceToStart + widths[i] * parseFloat(gsap.getProperty(item, "scaleX") as string);
+    tl.to(item, { xPercent: snap((curX - distanceToLoop) / widths[i] * 100), duration: distanceToLoop / pixelsPerSecond }, 0)
+      .fromTo(item, { xPercent: snap((curX - distanceToLoop + totalWidth) / widths[i] * 100) }, { xPercent: xPercents[i], duration: (curX - distanceToLoop + totalWidth - distanceToStart) / pixelsPerSecond, immediateRender: false }, distanceToLoop / pixelsPerSecond)
+      .add("label" + i, distanceToStart / pixelsPerSecond);
+    times[i] = distanceToStart / pixelsPerSecond;
+  }
+
+  function toIndex(index: number, vars: any) {
+    vars = vars || {};
+    (Math.abs(index - curIndex) > length / 2) && (index += index > curIndex ? -length : length); // always go in the shortest direction
+    let newIndex = gsap.utils.wrap(0, length, index),
+      time = times[newIndex];
+    if (time > tl.time() !== index > curIndex) { // if we're wrapping the timeline's playhead, make the proper adjustments
+      vars.modifiers = { time: gsap.utils.wrap(0, tl.duration()) };
+      time += tl.duration() * (index > curIndex ? 1 : -1);
+    }
+    curIndex = newIndex;
+    vars.overwrite = true;
+    return tl.tweenTo(time, vars);
+  }
+
+  tl.next = (vars: any) => toIndex(curIndex + 1, vars);
+  tl.previous = (vars: any) => toIndex(curIndex - 1, vars);
+  tl.current = () => curIndex;
+  tl.toIndex = (index: number, vars: any) => toIndex(index, vars);
+  tl.times = times;
+  tl.progress(1, true).progress(0, true); // pre-render for performance
+  if (config.reversed) {
+    (tl.vars as any).onReverseComplete();
+    tl.reverse();
+  }
+  return tl;
+}
 
 const SectionHeader: React.FC<{
   title: string;
   subtitle: string;
   gradient: string;
 }> = ({ title, subtitle, gradient }) => (
-  <div className="flex flex-col items-center mb-16 text-center relative">
+  <div className="flex flex-col items-center mb-16 text-center relative section-header opacity-0 translate-y-8">
     <span className="text-sm font-extrabold uppercase tracking-[0.3em] mb-3 text-slate-400">
       {subtitle}
     </span>
@@ -24,12 +100,72 @@ const SectionHeader: React.FC<{
 
 const App: React.FC = () => {
   const getProjects = (cat: Category) => PROJECTS.filter(p => p.category === cat);
+  const railRef = useRef<HTMLDivElement>(null);
+  const workRef = useRef<HTMLDivElement>(null);
+  const lifeRef = useRef<HTMLDivElement>(null);
+  const learningRef = useRef<HTMLDivElement>(null);
+  const itRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   // Quadruple the list to ensure seamless infinite scrolling loop
   const railProjects = [...PROJECTS, ...PROJECTS, ...PROJECTS, ...PROJECTS];
 
+  // GSAP Animations
+  useGSAP(() => {
+    // 1. Horizontal Loop for Rail
+    if (railRef.current) {
+      const boxes = gsap.utils.toArray('.rail-item');
+      const loop = horizontalLoop(boxes as HTMLElement[], {
+        speed: 1, // pixels per second (x100)
+        repeat: -1,
+        paddingRight: 24 // match gap-6 (24px)
+      });
+
+      // Hover to pause/slow
+      railRef.current.addEventListener("mouseenter", () => gsap.to(loop, { timeScale: 0.1, duration: 0.5 }));
+      railRef.current.addEventListener("mouseleave", () => gsap.to(loop, { timeScale: 1, duration: 0.5 }));
+    }
+
+    // 2. Section Stagger Animations
+    const sections = [workRef, lifeRef, learningRef, itRef];
+
+    sections.forEach(ref => {
+      if (!ref.current) return;
+
+      // Header Animation
+      const header = ref.current.querySelector('.section-header');
+      if (header) {
+        ScrollTrigger.create({
+          trigger: ref.current,
+          start: "top 80%",
+          onEnter: () => gsap.to(header, { opacity: 1, y: 0, duration: 1, ease: "power3.out" })
+        });
+      }
+
+      // Cards Animation
+      const cards = gsap.utils.toArray(ref.current.querySelectorAll('.tilt-card-wrapper'));
+      if (cards.length > 0) {
+        ScrollTrigger.batch(cards as Element[], {
+          start: "top 85%",
+          onEnter: batch => gsap.to(batch, {
+            opacity: 1,
+            y: 0,
+            stagger: 0.15,
+            duration: 0.8,
+            ease: "back.out(1.2)",
+            overwrite: true
+          }),
+          onLeaveBack: batch => gsap.to(batch, {
+            // opacity: 0, y: 50, duration: 0.5 // Optional: disappear when scrolling back up
+          })
+        });
+      }
+    });
+
+  }, { scope: mainRef });
+
   return (
-    <div className="min-h-screen w-full font-body relative overflow-x-hidden selection:bg-pink-500 selection:text-white bg-transparent">
+    <div ref={mainRef as any} className="min-h-screen w-full font-body relative overflow-x-hidden selection:bg-pink-500 selection:text-white bg-transparent">
 
       {/* BACKGROUND LAYER (z-0) */}
       <RibbonBackground />
@@ -53,12 +189,14 @@ const App: React.FC = () => {
         {/* Infinite Scrolling Rail Container */}
         <div className="w-full relative z-10">
           <div
-            className="flex gap-6 w-max animate-scroll-left hover:[animation-play-state:paused] py-4 px-4"
+            ref={railRef}
+            className="flex relative w-full h-[400px] overflow-hidden" // Changed to relative and overflow-hidden for GSAP
           >
             {railProjects.map((p, i) => (
               <div
                 key={`${p.id}-${i}`}
-                className="relative w-[320px] sm:w-[420px] aspect-[16/10] flex-shrink-0 rounded-xl shadow-lg shadow-slate-300/60 bg-white border border-white/50 overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-cyan-500/30 cursor-pointer group"
+                className="rail-item absolute top-0 left-0 w-[320px] sm:w-[420px] aspect-[16/10] flex-shrink-0 rounded-xl shadow-lg shadow-slate-300/60 bg-white border border-white/50 overflow-hidden transform cursor-pointer group"
+                style={{ left: i * (420 + 24) }} // Initial simple positioning, GSAP takes over
               >
                 <img
                   src={p.imagePath}
@@ -88,7 +226,7 @@ const App: React.FC = () => {
       <main className="relative z-10 px-4 md:px-8 pb-32 space-y-32 max-w-8xl mx-auto">
 
         {/* Work Section */}
-        <section id="work" className="scroll-mt-32">
+        <section id="work" ref={workRef} className="scroll-mt-32">
           <div className="mx-auto max-w-7xl">
             <SectionHeader
               title="工作"
@@ -97,7 +235,7 @@ const App: React.FC = () => {
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 auto-rows-[450px]">
               {getProjects('Work').map((project, i) => (
-                <div key={project.id} className={`${i % 2 === 0 ? 'lg:translate-y-12' : ''} transition-transform duration-500`}>
+                <div key={project.id} className={`tilt-card-wrapper opacity-0 translate-y-8 ${i % 2 === 0 ? 'lg:translate-y-12' : ''} transition-transform duration-500`}>
                   <TiltCard project={project} />
                 </div>
               ))}
@@ -106,7 +244,7 @@ const App: React.FC = () => {
         </section>
 
         {/* Life Section */}
-        <section id="life" className="scroll-mt-32">
+        <section id="life" ref={lifeRef} className="scroll-mt-32">
           <div className="mx-auto max-w-7xl">
             <SectionHeader
               title="生活"
@@ -114,11 +252,11 @@ const App: React.FC = () => {
               gradient="bg-gradient-to-r from-lime-600 to-green-600"
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 auto-rows-[400px]">
-              <div className="md:col-span-2 md:row-span-2 min-h-[500px]">
+              <div className="md:col-span-2 md:row-span-2 min-h-[500px] tilt-card-wrapper opacity-0 translate-y-8">
                 {getProjects('Life')[0] && <TiltCard project={getProjects('Life')[0]} />}
               </div>
               {getProjects('Life').slice(1).map(p => (
-                <div key={p.id}>
+                <div key={p.id} className="tilt-card-wrapper opacity-0 translate-y-8">
                   <TiltCard project={p} />
                 </div>
               ))}
@@ -127,7 +265,7 @@ const App: React.FC = () => {
         </section>
 
         {/* Learning Section */}
-        <section id="learning" className="scroll-mt-32">
+        <section id="learning" ref={learningRef} className="scroll-mt-32">
           <div className="mx-auto max-w-7xl">
             <SectionHeader
               title="学习"
@@ -136,14 +274,16 @@ const App: React.FC = () => {
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 auto-rows-[400px]">
               {getProjects('Learning').map((project) => (
-                <TiltCard key={project.id} project={project} />
+                <div key={project.id} className="tilt-card-wrapper opacity-0 translate-y-8">
+                  <TiltCard project={project} />
+                </div>
               ))}
             </div>
           </div>
         </section>
 
         {/* IT Section */}
-        <section id="it" className="scroll-mt-32">
+        <section id="it" ref={itRef} className="scroll-mt-32">
           <div className="mx-auto max-w-7xl">
             <SectionHeader
               title="IT & 成长"
@@ -152,7 +292,9 @@ const App: React.FC = () => {
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 auto-rows-[420px]">
               {getProjects('IT').map((project) => (
-                <TiltCard key={project.id} project={project} />
+                <div key={project.id} className="tilt-card-wrapper opacity-0 translate-y-8">
+                  <TiltCard project={project} />
+                </div>
               ))}
             </div>
           </div>

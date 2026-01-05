@@ -1,5 +1,7 @@
-import React, { useRef, useState, MouseEvent } from 'react';
+import React, { useRef } from 'react';
 import { Project } from '../types';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 
 interface TiltCardProps {
   project: Project;
@@ -7,45 +9,87 @@ interface TiltCardProps {
 
 const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [rotation, setRotation] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sheenRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
+  // GSAP Optimized Animation Setters
+  const xTo = useRef<gsap.QuickToFunc>();
+  const yTo = useRef<gsap.QuickToFunc>();
+  const sheenXTo = useRef<gsap.QuickToFunc>();
+  const sheenYTo = useRef<gsap.QuickToFunc>();
+
+  useGSAP(() => {
+    if (!containerRef.current || !sheenRef.current) return;
+
+    // Initialize QuickTo functions for performance
+    xTo.current = gsap.quickTo(containerRef.current, "rotationX", { duration: 0.4, ease: "power3.out" });
+    yTo.current = gsap.quickTo(containerRef.current, "rotationY", { duration: 0.4, ease: "power3.out" });
+
+    // Sheen movement
+    sheenXTo.current = gsap.quickTo(sheenRef.current, "x", { duration: 0.4, ease: "power3.out" });
+    sheenYTo.current = gsap.quickTo(sheenRef.current, "y", { duration: 0.4, ease: "power3.out" });
+
+    // Initial State
+    gsap.set(containerRef.current, { transformPerspective: 1000, transformStyle: "preserve-3d" });
+  }, { scope: cardRef });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current || !xTo.current || !yTo.current || !sheenXTo.current || !sheenYTo.current) return;
 
     const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left; 
-    const y = e.clientY - rect.top;  
+    const width = rect.width;
+    const height = rect.height;
 
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
+    // Mouse position relative to card center
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
 
-    const rotateX = ((y - centerY) / centerY) * -2; // Reduced rotation for cleaner feel
-    const rotateY = ((x - centerX) / centerX) * 2;
+    const centerX = width / 2;
+    const centerY = height / 2;
 
-    setRotation({ x: rotateX, y: rotateY });
-  };
+    // Rotation math (Limit rotation to around 10 degrees)
+    const rotateX = ((mouseY - centerY) / centerY) * -10;
+    const rotateY = ((mouseX - centerX) / centerX) * 10;
 
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-    setRotation({ x: 0, y: 0 });
+    // Apply rotation
+    xTo.current(rotateX);
+    yTo.current(rotateY);
+
+    // Sheen math (Move gradient opposite to mouse or follow mouse)
+    // We want the light reflection to move across the surface
+    sheenXTo.current(mouseX - width / 2);
+    sheenYTo.current(mouseY - height / 2);
   };
 
   const handleMouseEnter = () => {
-    setIsHovering(true);
+    if (containerRef.current) {
+      gsap.to(containerRef.current, { scale: 1.05, duration: 0.3, ease: "back.out(1.2)" });
+    }
+    if (sheenRef.current) {
+      gsap.to(sheenRef.current, { opacity: 0.4, duration: 0.3 });
+    }
   };
 
-  const style = {
-    transform: isHovering
-      ? `perspective(1000px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) scale(1.02)`
-      : 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)',
-    transition: isHovering ? 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'transform 0.5s ease-out',
+  const handleMouseLeave = () => {
+    if (!xTo.current || !yTo.current) return;
+
+    // Reset rotation
+    xTo.current(0);
+    yTo.current(0);
+
+    if (containerRef.current) {
+      gsap.to(containerRef.current, { scale: 1, duration: 0.5, ease: "power3.out" });
+    }
+    if (sheenRef.current) {
+      gsap.to(sheenRef.current, { opacity: 0, duration: 0.5 });
+    }
   };
 
   return (
     <a
       href={project.projectPath}
-      className="block h-full outline-none"
+      className="block h-full outline-none perspective-1000"
       target="_self"
     >
       <div
@@ -53,54 +97,76 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        style={style}
-        className={`
-          group relative flex flex-col h-full rounded-[2rem] p-4
-          bg-white/40 backdrop-blur-xl border border-white/60
-          shadow-lg shadow-slate-200/50 
-          transition-all duration-300
-          hover:shadow-fresh-cyan/50 hover:shadow-2xl hover:-translate-y-2
-          hover:bg-white/60
-        `}
+        className="relative h-full w-full"
+        style={{ perspective: '1000px' }} // Ensure perspective is set on container
       >
-        {/* Image Container - 75% Height */}
-        <div className="relative h-[75%] w-full overflow-hidden rounded-[1.5rem] bg-white/50">
-          <img
-            src={project.imagePath}
-            alt={project.title}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-          
-          {/* Floating Icon - White Glass */}
-          <div className="absolute top-4 left-4 h-12 w-12 rounded-2xl bg-white/80 backdrop-blur flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-            <span className={`material-symbols-rounded text-2xl ${project.color}`}>
-              {project.icon}
-            </span>
+        {/* Animated Container */}
+        <div
+          ref={containerRef}
+          className={`
+                group relative flex flex-col h-full rounded-[2rem] p-4
+                bg-white/40 backdrop-blur-xl border border-white/60
+                shadow-lg shadow-slate-200/50 
+                will-change-transform
+            `}
+        >
+          {/* Sheen / Glare Effect */}
+          <div
+            className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none z-20"
+            style={{ maskImage: 'linear-gradient(to bottom, white, white)' }} // Fix safari overflow issues
+          >
+            <div
+              ref={sheenRef}
+              className="absolute inset-0 w-[200%] h-[200%] top-[-50%] left-[-50%] opacity-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.8)_0%,_rgba(255,255,255,0)_60%)] mix-blend-overlay"
+            />
           </div>
 
-          {/* "View" Button Pill - appears on hover */}
-          <div className="absolute bottom-4 right-4 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-             <div className="px-5 py-2.5 bg-slate-900 text-white font-bold rounded-full shadow-lg flex items-center gap-2 text-sm">
-               <span>访问</span>
-               <span className="material-symbols-rounded text-sm">arrow_outward</span>
-             </div>
-          </div>
-        </div>
+          {/* Image Container - 75% Height */}
+          <div className="relative h-[75%] w-full overflow-hidden rounded-[1.5rem] bg-white/50 z-10 translate-z-20">
+            <img
+              src={project.imagePath}
+              alt={project.title}
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+            />
 
-        {/* Text Container */}
-        <div className="flex-1 pt-5 flex flex-col justify-between">
-           <div>
-              <h3 className="text-xl font-extrabold text-slate-800 leading-tight mb-2 tracking-tight group-hover:text-fresh-teal transition-colors drop-shadow-sm">{project.title}</h3>
-              <p className="text-sm font-bold text-slate-600 line-clamp-2 leading-relaxed">{project.description}</p>
-           </div>
-           
-           <div className="flex flex-wrap gap-2 mt-4">
+            {/* Floating Icon - Parallax Depth */}
+            <div
+              className="absolute top-4 left-4 h-12 w-12 rounded-2xl bg-white/80 backdrop-blur flex items-center justify-center shadow-lg transition-transform duration-300 transform translate-z-30 group-hover:translate-z-50"
+              style={{ transformStyle: 'preserve-3d', transform: 'translateZ(30px)' }}
+            >
+              <span className={`material-symbols-rounded text-2xl ${project.color}`}>
+                {project.icon}
+              </span>
+            </div>
+
+            {/* "View" Button Pill - appears on hover */}
+            <div className="absolute bottom-4 right-4 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-30">
+              <div className="px-5 py-2.5 bg-slate-900 text-white font-bold rounded-full shadow-lg flex items-center gap-2 text-sm">
+                <span>访问</span>
+                <span className="material-symbols-rounded text-sm">arrow_outward</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Text Container */}
+          <div ref={contentRef} className="flex-1 pt-5 flex flex-col justify-between z-10 translate-z-10">
+            <div>
+              <h3 className="text-xl font-extrabold text-slate-800 leading-tight mb-2 tracking-tight group-hover:text-fresh-teal transition-colors drop-shadow-sm">
+                {project.title}
+              </h3>
+              <p className="text-sm font-bold text-slate-600 line-clamp-2 leading-relaxed">
+                {project.description}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mt-4">
               {project.tags.map(tag => (
                 <span key={tag} className="text-[10px] uppercase tracking-wider font-extrabold px-3 py-1 rounded-full bg-white/60 border border-slate-200 text-slate-600 group-hover:border-fresh-cyan/30 group-hover:text-fresh-teal transition-colors">
                   {tag}
                 </span>
               ))}
-           </div>
+            </div>
+          </div>
         </div>
       </div>
     </a>
