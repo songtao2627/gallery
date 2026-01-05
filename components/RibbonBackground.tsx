@@ -37,8 +37,8 @@ const themes: Theme[] = [
         id: 'fresh',
         label: '清新自然',
         bg: '#f0fdf4',
-        text: '#14532d',
-        title: '#166534',
+        text: '#374151', // Deep Gray-Green for readability
+        title: '#15803d', // Vibrancy Green
         waves: [
             { color: 'rgba(132, 250, 176, 0.4)', speed: 0.2, amplitude: 50, frequency: 0.005, yOffset: 100, opacity: 0.4, direction: 1 },
             { color: 'rgba(143, 211, 244, 0.4)', speed: 0.3, amplitude: 70, frequency: 0.004, yOffset: 150, opacity: 0.4, direction: -1 },
@@ -54,9 +54,9 @@ const themes: Theme[] = [
     {
         id: 'cyber',
         label: '赛博朋克',
-        bg: '#0f172a',
-        text: '#e2e8f0',
-        title: '#f472b6',
+        bg: '#020617', // Deepest Blue/Black
+        text: '#cbd5e1', // Light Slate for visibility on dark
+        title: '#22d3ee', // Neon Cyan
         waves: [
             { color: 'rgba(255, 20, 147, 0.5)', speed: 0.25, amplitude: 80, frequency: 0.004, yOffset: 100, opacity: 0.5, direction: 1 },
             { color: 'rgba(0, 255, 255, 0.5)', speed: 0.35, amplitude: 60, frequency: 0.005, yOffset: 200, opacity: 0.5, direction: -1 },
@@ -73,8 +73,8 @@ const themes: Theme[] = [
         id: 'acid',
         label: '酸性波普',
         bg: '#171717',
-        text: '#fef08a',
-        title: '#bef264',
+        text: '#e2e8f0', // White/Gray instead of Yellow for readability
+        title: '#d9f99d', // Acid Green
         waves: [
             { color: 'rgba(57, 255, 20, 0.5)', speed: 0.2, amplitude: 60, frequency: 0.005, yOffset: 120, opacity: 0.5, direction: 1 },
             { color: 'rgba(0, 240, 255, 0.5)', speed: 0.3, amplitude: 80, frequency: 0.004, yOffset: 220, opacity: 0.5, direction: -1 },
@@ -90,8 +90,8 @@ const themes: Theme[] = [
         id: 'sunset',
         label: '温暖日落',
         bg: '#fff7ed',
-        text: '#7c2d12',
-        title: '#c2410c',
+        text: '#78350f', // Deep Warm Brown
+        title: '#ea580c', // Burnt Orange
         waves: [
             { color: 'rgba(255, 107, 0, 0.5)', speed: 0.25, amplitude: 70, frequency: 0.004, yOffset: 150, opacity: 0.5, direction: 1 },
             { color: 'rgba(255, 0, 128, 0.4)', speed: 0.35, amplitude: 50, frequency: 0.005, yOffset: 250, opacity: 0.4, direction: -1 },

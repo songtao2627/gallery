@@ -151,17 +151,17 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
           {/* Text Container */}
           <div ref={contentRef} className="flex-1 pt-5 flex flex-col justify-between z-20 translate-z-10">
             <div>
-              <h3 className="text-xl font-extrabold text-slate-800 leading-tight mb-2 tracking-tight group-hover:text-fresh-teal transition-colors drop-shadow-sm">
+              <h3 className="text-xl font-extrabold text-[var(--theme-title)] leading-tight mb-2 tracking-tight group-hover:text-fresh-teal transition-colors drop-shadow-sm">
                 {project.title}
               </h3>
-              <p className="text-sm font-bold text-slate-600 line-clamp-2 leading-relaxed">
+              <p className="text-sm font-bold text-[var(--theme-text)] line-clamp-2 leading-relaxed opacity-90">
                 {project.description}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2 mt-4">
               {project.tags.map(tag => (
-                <span key={tag} className="text-[10px] uppercase tracking-wider font-extrabold px-3 py-1 rounded-full bg-white/60 border border-slate-200 text-slate-600 group-hover:border-fresh-cyan/30 group-hover:text-fresh-teal transition-colors">
+                <span key={tag} className="text-[10px] uppercase tracking-wider font-extrabold px-3 py-1 rounded-full bg-white/60 border border-current text-[var(--theme-text)] opacity-75 group-hover:border-fresh-cyan/30 group-hover:text-fresh-teal transition-colors">
                   {tag}
                 </span>
               ))}
