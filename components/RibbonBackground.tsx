@@ -21,54 +21,54 @@ interface Theme {
 const themes: Theme[] = [
     {
         id: 'fresh',
-        label: 'Fresh Nature',
+        label: '清新自然',
         bg: '#f0fdf4', // Light green-ish white
         text: '#14532d', // Dark green
         title: '#166534', // Green 700
         waves: [
-            { color: 'rgba(132, 250, 176, 0.4)', speed: 0.0004, amplitude: 50, frequency: 0.005, yOffset: 100, opacity: 0.4 }, // Fresh Lime
-            { color: 'rgba(143, 211, 244, 0.4)', speed: 0.0006, amplitude: 70, frequency: 0.004, yOffset: 200, opacity: 0.4 }, // Fresh Cyan
-            { color: 'rgba(252, 203, 144, 0.4)', speed: 0.0002, amplitude: 40, frequency: 0.006, yOffset: 300, opacity: 0.4 }, // Fresh Lemon
-            { color: 'rgba(0, 147, 233, 0.3)', speed: 0.0008, amplitude: 60, frequency: 0.003, yOffset: 400, opacity: 0.3 }, // Fresh Teal
+            { color: 'rgba(132, 250, 176, 0.4)', speed: 0.0002, amplitude: 50, frequency: 0.005, yOffset: 100, opacity: 0.4 }, // Fresh Lime
+            { color: 'rgba(143, 211, 244, 0.4)', speed: 0.0003, amplitude: 70, frequency: 0.004, yOffset: 200, opacity: 0.4 }, // Fresh Cyan
+            { color: 'rgba(252, 203, 144, 0.4)', speed: 0.0001, amplitude: 40, frequency: 0.006, yOffset: 300, opacity: 0.4 }, // Fresh Lemon
+            { color: 'rgba(0, 147, 233, 0.3)', speed: 0.0004, amplitude: 60, frequency: 0.003, yOffset: 400, opacity: 0.3 }, // Fresh Teal
         ]
     },
     {
         id: 'cyber',
-        label: 'Cyber Punk',
+        label: '赛博朋克',
         bg: '#0f172a', // Slate 900
         text: '#e2e8f0', // Slate 200
         title: '#f472b6', // Pink 400
         waves: [
-            { color: 'rgba(255, 20, 147, 0.5)', speed: 0.0005, amplitude: 80, frequency: 0.004, yOffset: 100, opacity: 0.5 }, // Neon Pink
-            { color: 'rgba(0, 255, 255, 0.5)', speed: 0.0007, amplitude: 60, frequency: 0.005, yOffset: 200, opacity: 0.5 }, // Electric Cyan
-            { color: 'rgba(255, 235, 59, 0.6)', speed: 0.0003, amplitude: 40, frequency: 0.006, yOffset: 300, opacity: 0.6 }, // Sunny Yellow
-            { color: 'rgba(138, 43, 226, 0.4)', speed: 0.0009, amplitude: 70, frequency: 0.003, yOffset: 400, opacity: 0.4 }, // Vivid Purple
+            { color: 'rgba(255, 20, 147, 0.5)', speed: 0.00025, amplitude: 80, frequency: 0.004, yOffset: 100, opacity: 0.5 }, // Neon Pink
+            { color: 'rgba(0, 255, 255, 0.5)', speed: 0.00035, amplitude: 60, frequency: 0.005, yOffset: 200, opacity: 0.5 }, // Electric Cyan
+            { color: 'rgba(255, 235, 59, 0.6)', speed: 0.00015, amplitude: 40, frequency: 0.006, yOffset: 300, opacity: 0.6 }, // Sunny Yellow
+            { color: 'rgba(138, 43, 226, 0.4)', speed: 0.00045, amplitude: 70, frequency: 0.003, yOffset: 400, opacity: 0.4 }, // Vivid Purple
         ]
     },
     {
         id: 'acid',
-        label: 'Acid Pop',
+        label: '酸性波普',
         bg: '#171717', // Neutral 900
         text: '#fef08a', // Yellow 200
         title: '#bef264', // Lime 400
         waves: [
-            { color: 'rgba(57, 255, 20, 0.5)', speed: 0.0004, amplitude: 60, frequency: 0.005, yOffset: 120, opacity: 0.5 }, // Lime Punch
-            { color: 'rgba(0, 240, 255, 0.5)', speed: 0.0006, amplitude: 80, frequency: 0.004, yOffset: 220, opacity: 0.5 }, // Hot Turquoise
-            { color: 'rgba(0, 110, 255, 0.5)', speed: 0.0008, amplitude: 50, frequency: 0.003, yOffset: 320, opacity: 0.5 }, // Electric Blue
-            { color: 'rgba(255, 255, 0, 0.5)', speed: 0.0003, amplitude: 70, frequency: 0.006, yOffset: 420, opacity: 0.5 }, // Highlighter Yellow
+            { color: 'rgba(57, 255, 20, 0.5)', speed: 0.0002, amplitude: 60, frequency: 0.005, yOffset: 120, opacity: 0.5 }, // Lime Punch
+            { color: 'rgba(0, 240, 255, 0.5)', speed: 0.0003, amplitude: 80, frequency: 0.004, yOffset: 220, opacity: 0.5 }, // Hot Turquoise
+            { color: 'rgba(0, 110, 255, 0.5)', speed: 0.0004, amplitude: 50, frequency: 0.003, yOffset: 320, opacity: 0.5 }, // Electric Blue
+            { color: 'rgba(255, 255, 0, 0.5)', speed: 0.00015, amplitude: 70, frequency: 0.006, yOffset: 420, opacity: 0.5 }, // Highlighter Yellow
         ]
     },
     {
         id: 'sunset',
-        label: 'Warm Sunset',
+        label: '温暖日落',
         bg: '#fff7ed', // Orange 50
         text: '#7c2d12', // Orange 900
         title: '#c2410c', // Orange 700
         waves: [
-            { color: 'rgba(255, 107, 0, 0.5)', speed: 0.0005, amplitude: 70, frequency: 0.004, yOffset: 150, opacity: 0.5 }, // Bright Orange
-            { color: 'rgba(255, 0, 128, 0.4)', speed: 0.0007, amplitude: 50, frequency: 0.005, yOffset: 250, opacity: 0.4 }, // Magenta Pop
-            { color: 'rgba(223, 255, 0, 0.6)', speed: 0.0003, amplitude: 60, frequency: 0.006, yOffset: 350, opacity: 0.6 }, // Laser Lemon
-            { color: 'rgba(0, 255, 170, 0.4)', speed: 0.0008, amplitude: 80, frequency: 0.003, yOffset: 450, opacity: 0.4 }, // Aqua
+            { color: 'rgba(255, 107, 0, 0.5)', speed: 0.00025, amplitude: 70, frequency: 0.004, yOffset: 150, opacity: 0.5 }, // Bright Orange
+            { color: 'rgba(255, 0, 128, 0.4)', speed: 0.00035, amplitude: 50, frequency: 0.005, yOffset: 250, opacity: 0.4 }, // Magenta Pop
+            { color: 'rgba(223, 255, 0, 0.6)', speed: 0.00015, amplitude: 60, frequency: 0.006, yOffset: 350, opacity: 0.6 }, // Laser Lemon
+            { color: 'rgba(0, 255, 170, 0.4)', speed: 0.0004, amplitude: 80, frequency: 0.003, yOffset: 450, opacity: 0.4 }, // Aqua
         ]
     }
 ];
