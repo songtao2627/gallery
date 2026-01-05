@@ -28,16 +28,15 @@ const Navbar: React.FC = () => {
   return (
     <div className="fixed top-6 left-0 w-full z-50 flex justify-center pointer-events-none px-4">
       <nav
-        className={`pointer-events-auto transition-all duration-300 ease-out flex items-center ${
-          scrolled
-            ? 'px-3 py-2 bg-white/80 backdrop-blur-xl border border-white/50 shadow-lg shadow-fresh-cyan/10 rounded-full scale-100'
-            : 'px-8 py-4 bg-white/90 backdrop-blur-md border border-white/50 shadow-2xl shadow-fresh-cyan/10 rounded-full scale-105'
-        }`}
+        className={`pointer-events-auto transition-all duration-300 ease-out flex items-center ${scrolled
+            ? 'px-3 py-2 bg-white/[0.15] backdrop-blur-xl border border-white/[0.18] shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] rounded-full scale-100'
+            : 'px-8 py-4 bg-white/[0.15] backdrop-blur-md border border-white/[0.18] shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] rounded-full scale-105'
+          }`}
       >
         <div className="flex items-center gap-1 md:gap-8">
           {/* Logo */}
-          <div 
-            className="flex items-center gap-2 cursor-pointer pr-4 md:pr-0" 
+          <div
+            className="flex items-center gap-2 cursor-pointer pr-4 md:pr-0"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white shadow-md">
@@ -64,11 +63,11 @@ const Navbar: React.FC = () => {
               </button>
             ))}
           </div>
-          
-           <div className="md:hidden ml-2">
-             <button className="h-10 w-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-900">
-               <span className="material-symbols-rounded">menu</span>
-             </button>
+
+          <div className="md:hidden ml-2">
+            <button className="h-10 w-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-900">
+              <span className="material-symbols-rounded">menu</span>
+            </button>
           </div>
         </div>
       </nav>

@@ -105,14 +105,14 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
           ref={containerRef}
           className={`
                 group relative flex flex-col h-full rounded-[2rem] p-4
-                bg-white/40 backdrop-blur-xl border border-white/60
-                shadow-lg shadow-slate-200/50 
+                bg-white/[0.15] backdrop-blur-xl border border-white/[0.18]
+                shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] 
                 will-change-transform
             `}
         >
           {/* Sheen / Glare Effect */}
           <div
-            className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none z-20"
+            className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none z-0"
             style={{ maskImage: 'linear-gradient(to bottom, white, white)' }} // Fix safari overflow issues
           >
             <div
@@ -122,7 +122,7 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
           </div>
 
           {/* Image Container - 75% Height */}
-          <div className="relative h-[75%] w-full overflow-hidden rounded-[1.5rem] bg-white/50 z-10 translate-z-20">
+          <div className="relative h-[75%] w-full overflow-hidden rounded-[1.5rem] bg-white/50 z-20 translate-z-20">
             <img
               src={project.imagePath}
               alt={project.title}
@@ -141,15 +141,15 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
 
             {/* "View" Button Pill - appears on hover */}
             <div className="absolute bottom-4 right-4 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-30">
-              <div className="px-5 py-2.5 bg-slate-900 text-white font-bold rounded-full shadow-lg flex items-center gap-2 text-sm">
+              <div className="px-6 py-3 bg-slate-900 text-white font-black rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.4)] border border-white/30 flex items-center gap-2 text-sm hover:scale-110 hover:bg-black hover:border-white/50 transition-all duration-300 cursor-pointer">
                 <span>访问</span>
-                <span className="material-symbols-rounded text-sm">arrow_outward</span>
+                <span className="material-symbols-rounded text-sm font-black">arrow_outward</span>
               </div>
             </div>
           </div>
 
           {/* Text Container */}
-          <div ref={contentRef} className="flex-1 pt-5 flex flex-col justify-between z-10 translate-z-10">
+          <div ref={contentRef} className="flex-1 pt-5 flex flex-col justify-between z-20 translate-z-10">
             <div>
               <h3 className="text-xl font-extrabold text-slate-800 leading-tight mb-2 tracking-tight group-hover:text-fresh-teal transition-colors drop-shadow-sm">
                 {project.title}
