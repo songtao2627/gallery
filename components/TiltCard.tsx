@@ -56,14 +56,15 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
         style={style}
         className={`
           group relative flex flex-col h-full rounded-[2rem] p-4
-          bg-white/70 backdrop-blur-md border border-white/80
+          bg-white/40 backdrop-blur-xl border border-white/60
           shadow-lg shadow-slate-200/50 
           transition-all duration-300
           hover:shadow-fresh-cyan/50 hover:shadow-2xl hover:-translate-y-2
+          hover:bg-white/60
         `}
       >
         {/* Image Container - 75% Height */}
-        <div className="relative h-[75%] w-full overflow-hidden rounded-[1.5rem] bg-white">
+        <div className="relative h-[75%] w-full overflow-hidden rounded-[1.5rem] bg-white/50">
           <img
             src={project.imagePath}
             alt={project.title}
@@ -71,7 +72,7 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
           />
           
           {/* Floating Icon - White Glass */}
-          <div className="absolute top-4 left-4 h-12 w-12 rounded-2xl bg-white/90 backdrop-blur flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+          <div className="absolute top-4 left-4 h-12 w-12 rounded-2xl bg-white/80 backdrop-blur flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
             <span className={`material-symbols-rounded text-2xl ${project.color}`}>
               {project.icon}
             </span>
@@ -89,13 +90,13 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
         {/* Text Container */}
         <div className="flex-1 pt-5 flex flex-col justify-between">
            <div>
-              <h3 className="text-xl font-extrabold text-slate-800 leading-tight mb-2 tracking-tight group-hover:text-fresh-teal transition-colors">{project.title}</h3>
-              <p className="text-sm font-medium text-slate-500 line-clamp-2 leading-relaxed">{project.description}</p>
+              <h3 className="text-xl font-extrabold text-slate-800 leading-tight mb-2 tracking-tight group-hover:text-fresh-teal transition-colors drop-shadow-sm">{project.title}</h3>
+              <p className="text-sm font-bold text-slate-600 line-clamp-2 leading-relaxed">{project.description}</p>
            </div>
            
            <div className="flex flex-wrap gap-2 mt-4">
               {project.tags.map(tag => (
-                <span key={tag} className="text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded-full bg-white border border-slate-100 text-slate-500 group-hover:border-fresh-cyan/30 group-hover:text-fresh-teal transition-colors">
+                <span key={tag} className="text-[10px] uppercase tracking-wider font-extrabold px-3 py-1 rounded-full bg-white/60 border border-slate-200 text-slate-600 group-hover:border-fresh-cyan/30 group-hover:text-fresh-teal transition-colors">
                   {tag}
                 </span>
               ))}
