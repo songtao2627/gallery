@@ -13,7 +13,7 @@ const Footer: React.FC = () => {
               <span className="font-display text-3xl font-black text-slate-900 tracking-tight">灵机</span>
             </div>
             <p className="text-slate-500 font-medium text-sm leading-relaxed">
-              InspiredJoy.cn<br />
+              inspireJoy.cn<br />
               数字创意的全新诠释。
             </p>
           </div>
@@ -25,7 +25,7 @@ const Footer: React.FC = () => {
                 <li><a href="#work" className="hover:text-fresh-cyan transition-colors">工作</a></li>
                 <li><a href="#life" className="hover:text-fresh-lime transition-colors">生活</a></li>
                 <li><a href="#learning" className="hover:text-fresh-teal transition-colors">学习</a></li>
-                <li><a href="#it" className="hover:text-fresh-lemon transition-colors">IT & 成长</a></li>
+                <li><a href="#it" className="hover:text-fresh-lemon transition-colors">IT & 提升</a></li>
               </ul>
             </div>
             <div>
@@ -43,7 +43,7 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="border-t border-slate-100 pt-6 flex flex-col md:flex-row justify-between items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wide">
-          <p>© 2026 InspiredJoy. 版权所有。</p>
+          <p>© 2026 inspireJoy. 版权所有。</p>
           <p className="bg-slate-50 px-3 py-1 rounded-full text-slate-500">京ICP备2026000333号</p>
         </div>
       </div>

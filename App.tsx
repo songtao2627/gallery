@@ -286,8 +286,8 @@ const App: React.FC = () => {
         <section id="it" ref={itRef} className="scroll-mt-32">
           <div className="mx-auto max-w-7xl">
             <SectionHeader
-              title="IT & 成长"
-              subtitle="Growth / 成长"
+              title="IT & 提升"
+              subtitle="Growth / 提升"
               gradient="bg-gradient-to-r from-orange-500 to-amber-500"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 auto-rows-[420px]">

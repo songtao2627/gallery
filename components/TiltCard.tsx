@@ -159,9 +159,9 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 mt-4 relative z-30">
               {project.tags.map(tag => (
-                <span key={tag} className="text-[10px] uppercase tracking-wider font-extrabold px-3 py-1 rounded-full bg-transparent border border-[var(--theme-text)]/40 text-[var(--theme-text)] opacity-90 group-hover:border-fresh-cyan/50 group-hover:text-fresh-teal transition-colors">
+                <span key={tag} className="text-[10px] uppercase tracking-wider font-extrabold px-3 py-1 rounded-full bg-transparent border border-white/50 text-white mix-blend-exclusion opacity-100 group-hover:border-white group-hover:bg-white group-hover:text-black group-hover:mix-blend-normal transition-all">
                   {tag}
                 </span>
               ))}

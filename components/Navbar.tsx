@@ -15,7 +15,7 @@ const Navbar: React.FC = () => {
     { label: '工作', id: 'work' },
     { label: '生活', id: 'life' },
     { label: '学习', id: 'learning' },
-    { label: 'IT & 成长', id: 'it' },
+    { label: 'IT & 提升', id: 'it' },
   ];
 
   const scrollToSection = (id: string) => {
@@ -29,8 +29,8 @@ const Navbar: React.FC = () => {
     <div className="fixed top-6 left-0 w-full z-50 flex justify-center pointer-events-none px-4">
       <nav
         className={`pointer-events-auto transition-all duration-300 ease-out flex items-center ${scrolled
-            ? 'px-3 py-2 bg-white/[0.15] backdrop-blur-xl border border-white/[0.18] shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] rounded-full scale-100'
-            : 'px-8 py-4 bg-white/[0.15] backdrop-blur-md border border-white/[0.18] shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] rounded-full scale-105'
+          ? 'px-3 py-2 bg-white/[0.15] backdrop-blur-xl border border-white/[0.18] shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] rounded-full scale-100'
+          : 'px-8 py-4 bg-white/[0.15] backdrop-blur-md border border-white/[0.18] shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] rounded-full scale-105'
           }`}
       >
         <div className="flex items-center gap-1 md:gap-8">
@@ -43,7 +43,7 @@ const Navbar: React.FC = () => {
               <span className="material-symbols-rounded text-xl">grain</span>
             </div>
             <span className={`font-display font-black tracking-tight text-slate-900 hidden md:block ${scrolled ? 'text-lg' : 'text-xl'}`}>
-              Inspired<span className="text-fresh-teal">Joy</span>
+              inspire<span className="text-fresh-teal">Joy</span>
             </span>
           </div>
 
