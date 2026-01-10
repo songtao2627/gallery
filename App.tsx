@@ -1,105 +1,138 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import TiltCard from './components/TiltCard';
 import RibbonBackground from './components/RibbonBackground';
-import { PROJECTS } from './constants';
-import { Category } from './types';
+// import { PROJECTS } from './constants';
+
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Draggable } from 'gsap/Draggable';
+import { Draggable } from 'gsap/all';
+
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import Login from './components/Login';
+import AdminDashboard from './components/AdminDashboard';
+import { supabase } from './lib/supabaseClient';
+import { Project, Category } from './types';
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, Draggable);
 
-/* 
-  Helper function for horizontal loop (infinite scroll)
-  Source: https://gsap.com/docs/v3/HelperFunctions#helpers
-*/
-function horizontalLoop(items: HTMLElement[], config: any) {
-  items = gsap.utils.toArray(items);
-  config = config || {};
-  let tl = gsap.timeline({ repeat: config.repeat, paused: config.paused, defaults: { ease: "none" }, onReverseComplete: () => { tl.totalTime(tl.rawTime() + tl.duration() * 100); } }),
-    length = items.length,
-    startX = items[0].offsetLeft,
-    times: number[] = [],
-    widths: number[] = [],
-    xPercents: number[] = [],
-    curIndex = 0,
-    pixelsPerSecond = (config.speed || 1) * 100,
-    snap = config.snap === false ? (v: number) => v : gsap.utils.snap(config.snap || 1),
-    totalWidth: number,
-    curX: number,
-    distanceToStart: number,
-    distanceToLoop: number,
-    item: HTMLElement,
-    i: number;
+// Move Home Page logic to a separate component or just keep it inside App but wrapped
+const HomePage: React.FC = () => {
+  // ... all the existing logic of App
 
-  gsap.set(items, { // convert "x" to "xPercent" to make things responsive, and populate the widths/xPercents Arrays to make lookups faster.
-    xPercent: (i, el) => {
-      let w = widths[i] = parseFloat(gsap.getProperty(el, "width", "px") as string);
-      xPercents[i] = snap(parseFloat(gsap.getProperty(el, "x", "px") as string) / w * 100 + gsap.getProperty(el, "xPercent") as number);
-      return xPercents[i];
+
+  /* 
+    Helper function for horizontal loop (infinite scroll)
+    Source: https://gsap.com/docs/v3/HelperFunctions#helpers
+  */
+  function horizontalLoop(items: HTMLElement[], config: any) {
+    items = gsap.utils.toArray(items);
+    config = config || {};
+    let tl = gsap.timeline({ repeat: config.repeat, paused: config.paused, defaults: { ease: "none" }, onReverseComplete: () => { tl.totalTime(tl.rawTime() + tl.duration() * 100); } }),
+      length = items.length,
+      startX = items[0].offsetLeft,
+      times: number[] = [],
+      widths: number[] = [],
+      xPercents: number[] = [],
+      curIndex = 0,
+      pixelsPerSecond = (config.speed || 1) * 100,
+      snap = config.snap === false ? (v: number) => v : gsap.utils.snap(config.snap || 1),
+      totalWidth: number,
+      curX: number,
+      distanceToStart: number,
+      distanceToLoop: number,
+      item: HTMLElement,
+      i: number;
+
+    gsap.set(items, { // convert "x" to "xPercent" to make things responsive, and populate the widths/xPercents Arrays to make lookups faster.
+      xPercent: (i, el) => {
+        let w = widths[i] = parseFloat(gsap.getProperty(el, "width", "px") as string);
+        xPercents[i] = snap(parseFloat(String(gsap.getProperty(el, "x", "px"))) / w * 100 + (gsap.getProperty(el, "xPercent") as number));
+        return xPercents[i];
+      }
+    });
+    gsap.set(items, { x: 0 });
+    totalWidth = items[length - 1].offsetLeft + xPercents[length - 1] / 100 * widths[length - 1] - startX + items[length - 1].offsetWidth * parseFloat(gsap.getProperty(items[length - 1], "scaleX") as string) + (parseFloat(config.paddingRight) || 0);
+    for (i = 0; i < length; i++) {
+      item = items[i];
+      curX = xPercents[i] / 100 * widths[i];
+      distanceToStart = item.offsetLeft + curX - startX;
+      distanceToLoop = distanceToStart + widths[i] * parseFloat(gsap.getProperty(item, "scaleX") as string);
+      tl.to(item, { xPercent: snap((curX - distanceToLoop) / widths[i] * 100), duration: distanceToLoop / pixelsPerSecond }, 0)
+        .fromTo(item, { xPercent: snap((curX - distanceToLoop + totalWidth) / widths[i] * 100) }, { xPercent: xPercents[i], duration: (curX - distanceToLoop + totalWidth - distanceToStart) / pixelsPerSecond, immediateRender: false }, distanceToLoop / pixelsPerSecond)
+        .add("label" + i, distanceToStart / pixelsPerSecond);
+      times[i] = distanceToStart / pixelsPerSecond;
     }
-  });
-  gsap.set(items, { x: 0 });
-  totalWidth = items[length - 1].offsetLeft + xPercents[length - 1] / 100 * widths[length - 1] - startX + items[length - 1].offsetWidth * parseFloat(gsap.getProperty(items[length - 1], "scaleX") as string) + (parseFloat(config.paddingRight) || 0);
-  for (i = 0; i < length; i++) {
-    item = items[i];
-    curX = xPercents[i] / 100 * widths[i];
-    distanceToStart = item.offsetLeft + curX - startX;
-    distanceToLoop = distanceToStart + widths[i] * parseFloat(gsap.getProperty(item, "scaleX") as string);
-    tl.to(item, { xPercent: snap((curX - distanceToLoop) / widths[i] * 100), duration: distanceToLoop / pixelsPerSecond }, 0)
-      .fromTo(item, { xPercent: snap((curX - distanceToLoop + totalWidth) / widths[i] * 100) }, { xPercent: xPercents[i], duration: (curX - distanceToLoop + totalWidth - distanceToStart) / pixelsPerSecond, immediateRender: false }, distanceToLoop / pixelsPerSecond)
-      .add("label" + i, distanceToStart / pixelsPerSecond);
-    times[i] = distanceToStart / pixelsPerSecond;
-  }
 
-  function toIndex(index: number, vars: any) {
-    vars = vars || {};
-    (Math.abs(index - curIndex) > length / 2) && (index += index > curIndex ? -length : length); // always go in the shortest direction
-    let newIndex = gsap.utils.wrap(0, length, index),
-      time = times[newIndex];
-    if (time > tl.time() !== index > curIndex) { // if we're wrapping the timeline's playhead, make the proper adjustments
-      vars.modifiers = { time: gsap.utils.wrap(0, tl.duration()) };
-      time += tl.duration() * (index > curIndex ? 1 : -1);
+    function toIndex(index: number, vars: any) {
+      vars = vars || {};
+      (Math.abs(index - curIndex) > length / 2) && (index += index > curIndex ? -length : length); // always go in the shortest direction
+      let newIndex = gsap.utils.wrap(0, length, index),
+        time = times[newIndex];
+      if (time > tl.time() !== index > curIndex) { // if we're wrapping the timeline's playhead, make the proper adjustments
+        vars.modifiers = { time: gsap.utils.wrap(0, tl.duration()) };
+        time += tl.duration() * (index > curIndex ? 1 : -1);
+      }
+      curIndex = newIndex;
+      vars.overwrite = true;
+      return tl.tweenTo(time, vars);
     }
-    curIndex = newIndex;
-    vars.overwrite = true;
-    return tl.tweenTo(time, vars);
+
+    tl.next = (vars: any) => toIndex(curIndex + 1, vars);
+    tl.previous = (vars: any) => toIndex(curIndex - 1, vars);
+    tl.current = () => curIndex;
+    tl.toIndex = (index: number, vars: any) => toIndex(index, vars);
+    tl.times = times;
+    tl.progress(1, true).progress(0, true); // pre-render for performance
+    if (config.reversed) {
+      (tl.vars as any).onReverseComplete();
+      tl.reverse();
+    }
+    return tl;
   }
 
-  tl.next = (vars: any) => toIndex(curIndex + 1, vars);
-  tl.previous = (vars: any) => toIndex(curIndex - 1, vars);
-  tl.current = () => curIndex;
-  tl.toIndex = (index: number, vars: any) => toIndex(index, vars);
-  tl.times = times;
-  tl.progress(1, true).progress(0, true); // pre-render for performance
-  if (config.reversed) {
-    (tl.vars as any).onReverseComplete();
-    tl.reverse();
-  }
-  return tl;
-}
+  const SectionHeader: React.FC<{
+    title: string;
+    subtitle: string;
+    gradient: string;
+  }> = ({ title, subtitle, gradient }) => (
+    <div className="flex flex-col items-center mb-16 text-center relative section-header opacity-0 translate-y-8">
+      <span className="text-xs font-extrabold uppercase tracking-[0.4em] mb-3 text-slate-400">
+        {subtitle}
+      </span>
+      <h2 className={`font-display text-5xl md:text-7xl font-black text-transparent bg-clip-text ${gradient} drop-shadow-sm pb-2 tracking-tighter`}>
+        {title}
+      </h2>
+      <div className="w-16 h-1.5 bg-slate-200 rounded-full mt-4"></div>
+    </div>
+  );
+  const [projects, setProjects] = useState<Project[]>([]);
 
-const SectionHeader: React.FC<{
-  title: string;
-  subtitle: string;
-  gradient: string;
-}> = ({ title, subtitle, gradient }) => (
-  <div className="flex flex-col items-center mb-16 text-center relative section-header opacity-0 translate-y-8">
-    <span className="text-xs font-extrabold uppercase tracking-[0.4em] mb-3 text-slate-400">
-      {subtitle}
-    </span>
-    <h2 className={`font-display text-5xl md:text-7xl font-black text-transparent bg-clip-text ${gradient} drop-shadow-sm pb-2 tracking-tighter`}>
-      {title}
-    </h2>
-    <div className="w-16 h-1.5 bg-slate-200 rounded-full mt-4"></div>
-  </div>
-);
+  useEffect(() => {
+    const fetchProjects = async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*');
 
-const App: React.FC = () => {
-  const getProjects = (cat: Category) => PROJECTS.filter(p => p.category === cat);
+      if (error) {
+        console.error('Error fetching projects:', error);
+      } else if (data) {
+        // Map database fields (snake_case) to typescript interface (camelCase)
+        const mappedProjects: Project[] = data.map((p: any) => ({
+          ...p,
+          projectPath: p.project_path,
+          imagePath: p.image_path,
+        }));
+        setProjects(mappedProjects);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  const getProjects = (cat: Category) => projects.filter(p => p.category === cat);
   const railRef = useRef<HTMLDivElement>(null);
   const workRef = useRef<HTMLDivElement>(null);
   const lifeRef = useRef<HTMLDivElement>(null);
@@ -107,23 +140,26 @@ const App: React.FC = () => {
   const itRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
 
-  // Quadruple the list to ensure seamless infinite scrolling loop
-  const railProjects = [...PROJECTS, ...PROJECTS, ...PROJECTS, ...PROJECTS];
+  // Quadruple the list to ensure seamless infinite scrolling loop (only if projects exist)
+  const railProjects = projects.length > 0 ? [...projects, ...projects, ...projects, ...projects] : [];
 
   // GSAP Animations
   useGSAP(() => {
     // 1. Horizontal Loop for Rail
     if (railRef.current) {
       const boxes = gsap.utils.toArray('.rail-item');
-      const loop = horizontalLoop(boxes as HTMLElement[], {
-        speed: 1, // pixels per second (x100)
-        repeat: -1,
-        paddingRight: 24 // match gap-6 (24px)
-      });
+      // Fix: Check if boxes exist before creating loop to avoid GSAP errors with empty arrays
+      if (boxes.length > 0) {
+        const loop = horizontalLoop(boxes as HTMLElement[], {
+          speed: 1, // pixels per second (x100)
+          repeat: -1,
+          paddingRight: 24 // match gap-6 (24px)
+        });
 
-      // Hover to pause/slow
-      railRef.current.addEventListener("mouseenter", () => gsap.to(loop, { timeScale: 0.1, duration: 0.5 }));
-      railRef.current.addEventListener("mouseleave", () => gsap.to(loop, { timeScale: 1, duration: 0.5 }));
+        // Hover to pause/slow
+        railRef.current.addEventListener("mouseenter", () => gsap.to(loop, { timeScale: 0.1, duration: 0.5 }));
+        railRef.current.addEventListener("mouseleave", () => gsap.to(loop, { timeScale: 1, duration: 0.5 }));
+      }
     }
 
     // 2. Section Stagger Animations
@@ -162,7 +198,7 @@ const App: React.FC = () => {
       }
     });
 
-  }, { scope: mainRef });
+  }, { scope: mainRef, dependencies: [projects] }); // Add projects as dependency
 
   return (
     <div ref={mainRef as any} className="min-h-screen w-full font-body relative overflow-x-hidden selection:bg-pink-500 selection:text-white bg-transparent">
@@ -304,6 +340,18 @@ const App: React.FC = () => {
 
       <Footer />
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+      </Routes>
+    </BrowserRouter>
   );
 };
 

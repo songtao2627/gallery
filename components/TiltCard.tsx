@@ -14,10 +14,10 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
   const contentRef = useRef<HTMLDivElement>(null);
 
   // GSAP Optimized Animation Setters
-  const xTo = useRef<gsap.QuickToFunc>();
-  const yTo = useRef<gsap.QuickToFunc>();
-  const sheenXTo = useRef<gsap.QuickToFunc>();
-  const sheenYTo = useRef<gsap.QuickToFunc>();
+  const xTo = useRef<gsap.QuickToFunc | null>(null);
+  const yTo = useRef<gsap.QuickToFunc | null>(null);
+  const sheenXTo = useRef<gsap.QuickToFunc | null>(null);
+  const sheenYTo = useRef<gsap.QuickToFunc | null>(null);
 
   useGSAP(() => {
     if (!containerRef.current || !sheenRef.current) return;

@@ -6,7 +6,7 @@ import { Project } from './types';
 // Learning -> Teal
 // IT -> Lemon/Amber
 
-export const PROJECTS: Project[] = [
+export const STATIC_PROJECTS: Project[] = [
   // --- WORK (Efficiency Tools) ---
   {
     id: 'w1',
