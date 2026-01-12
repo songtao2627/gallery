@@ -102,9 +102,11 @@ const themes: Theme[] = [
     }
 ];
 
-const RibbonBackground: React.FC = () => {
+const RibbonBackground: React.FC<{ initialThemeId?: string }> = ({ initialThemeId }) => {
     const containerRef = useRef<SVGSVGElement>(null);
-    const [currentTheme, setCurrentTheme] = useState<Theme>(themes[0]);
+    const [currentTheme, setCurrentTheme] = useState<Theme>(
+        themes.find(t => t.id === initialThemeId) || themes[0]
+    );
     const pathsRef = useRef<(SVGPathElement | null)[]>([]);
     const particlesRef = useRef<(SVGCircleElement | null)[]>([]);
 
@@ -118,6 +120,7 @@ const RibbonBackground: React.FC = () => {
 
         document.documentElement.style.setProperty('--theme-title', currentTheme.title);
         document.documentElement.style.setProperty('--theme-text', currentTheme.text);
+        document.documentElement.style.setProperty('--theme-bg', currentTheme.bg);
 
         // Fallback or additional global styles if needed
         const styleId = 'dynamic-theme-style';
@@ -299,10 +302,13 @@ const RibbonBackground: React.FC = () => {
                             height: '32px',
                             borderRadius: '50%',
                             background: `linear-gradient(135deg, ${theme.title}, ${theme.bg})`,
-                            border: currentTheme.id === theme.id ? `3px solid ${currentTheme.text}` : '2px solid transparent',
+                            border: 'none',
+                            outline: 'none',
                             cursor: 'pointer',
-                            transition: 'transform 0.2s, border 0.2s',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                            transition: 'transform 0.2s, box-shadow 0.2s',
+                            boxShadow: currentTheme.id === theme.id
+                                ? `0 0 0 3px ${currentTheme.text}, 0 2px 4px rgba(0,0,0,0.2)`
+                                : '0 2px 4px rgba(0,0,0,0.2)',
                             transform: currentTheme.id === theme.id ? 'scale(1.1)' : 'scale(1)'
                         }}
                     />

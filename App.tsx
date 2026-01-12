@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import TiltCard from './components/TiltCard';
@@ -11,8 +11,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Draggable } from 'gsap/all';
 
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
-import Login from './components/Login';
-import AdminDashboard from './components/AdminDashboard';
+const Login = React.lazy(() => import('./components/Login'));
+const AdminDashboard = React.lazy(() => import('./components/AdminDashboard'));
 import { supabase } from './lib/supabaseClient';
 import { Project, Category } from './types';
 
@@ -346,11 +346,17 @@ const HomePage: React.FC = () => {
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-      </Routes>
+      <Suspense fallback={
+        <div className="flex items-center justify-center h-screen w-full bg-[#0f172a] text-white">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-pink-500"></div>
+        </div>
+      }>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 };
