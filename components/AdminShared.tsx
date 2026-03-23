@@ -532,3 +532,34 @@ export const ColorSelector: React.FC<ColorSelectorProps> = ({ label, value, onCh
         </div>
     );
 };
+
+interface GradientButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    label: string;
+    icon?: string;
+}
+
+export const GradientButton: React.FC<GradientButtonProps> = ({ label, icon, className = '', ...props }) => (
+    <button
+        type="button"
+        className={`group relative rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-lg shadow-blue-500/30 hover:scale-105 hover:shadow-blue-500/50 transition-all transform overflow-hidden flex items-center justify-center gap-2 ${className}`}
+        {...props}
+    >
+        <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full transition-transform duration-500 -skew-x-12 -translate-x-full"></div>
+        {icon && <span className="material-symbols-rounded text-lg relative z-10">{icon}</span>}
+        <span className="relative z-10">{label}</span>
+    </button>
+);
+
+export const OutlineButton: React.FC<GradientButtonProps> = ({ label, icon, className = '', ...props }) => (
+    <button
+        type="button"
+        className={`group relative rounded-xl border-2 font-bold transition-all backdrop-blur-md overflow-hidden flex items-center justify-center gap-2 hover:scale-105 hover:shadow-lg ${className}`}
+        {...props}
+    >
+        {/* Sweep Effect */}
+        <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-[-12deg]"></div>
+
+        {icon && <span className="material-symbols-rounded text-lg relative z-10">{icon}</span>}
+        <span className="relative z-10">{label}</span>
+    </button>
+);

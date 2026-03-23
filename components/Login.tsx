@@ -28,6 +28,24 @@ const Login: React.FC = () => {
         }
     };
 
+    const handleResetPassword = async () => {
+        if (!email) {
+            setError('Please enter your email address first to reset password.');
+            return;
+        }
+        setLoading(true);
+        setError(null);
+        
+        const { error } = await supabase.auth.resetPasswordForEmail(email);
+        
+        if (error) {
+            setError(error.message);
+        } else {
+            setError('Password reset email sent! Please check your inbox.');
+        }
+        setLoading(false);
+    };
+
     return (
         <div className="relative min-h-screen flex items-center justify-center overflow-hidden selection:bg-pink-500 selection:text-white font-body">
             {/* Background Animation */}
@@ -85,6 +103,15 @@ const Login: React.FC = () => {
                                     className="w-full pl-12 pr-6 py-4 bg-black/20 border border-white/10 rounded-xl focus:bg-white/5 focus:border-blue-500/50 focus:outline-none transition-all duration-300 text-white placeholder:text-slate-600 font-medium"
                                     placeholder="••••••••"
                                 />
+                            </div>
+                            <div className="flex justify-end mt-1">
+                                <button
+                                    type="button"
+                                    onClick={handleResetPassword}
+                                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                                >
+                                    Forgot Password?
+                                </button>
                             </div>
                         </div>
 

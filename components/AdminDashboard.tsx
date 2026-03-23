@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Project } from '../types';
 import RibbonBackground from './RibbonBackground';
 import AdminTiltCard from './AdminTiltCard';
-import { Modal, ModalHeader, StyledInput, StyledTextArea, StyledSelect, StyledActionButtons, TagSelector, IconSelector, ColorSelector } from './AdminShared';
+import { Modal, ModalHeader, StyledInput, StyledTextArea, StyledSelect, StyledActionButtons, TagSelector, IconSelector, ColorSelector, GradientButton, OutlineButton } from './AdminShared';
 
 const AdminDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -16,6 +16,7 @@ const AdminDashboard: React.FC = () => {
     const [editingProject, setEditingProject] = useState<Partial<Project> | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [uploadingState, setUploadingState] = useState<{ [key: string]: boolean }>({});
 
     // Tab State
     const [activeTab, setActiveTab] = useState<'projects' | 'tags'>('projects');
@@ -25,6 +26,11 @@ const AdminDashboard: React.FC = () => {
     const [isAddTagModalOpen, setIsAddTagModalOpen] = useState(false);
     const [newTagName, setNewTagName] = useState('');
     const [newTagProjects, setNewTagProjects] = useState<string[]>([]);
+
+    // Tag Modal Project Selection State
+    const [tagModalProjects, setTagModalProjects] = useState<Project[]>([]);
+    const [tagProjectSearch, setTagProjectSearch] = useState('');
+    const [isTagProjectLoading, setIsTagProjectLoading] = useState(false);
 
     // Derived State
     const [allTags, setAllTags] = useState<{ id: string; name: string }[]>([]);
@@ -116,6 +122,51 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, bucketName: string, metadataKey: string, platform?: string) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const fileKey = platform ? `${metadataKey}_${platform}` : metadataKey;
+        setUploadingState(prev => ({ ...prev, [fileKey]: true }));
+
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            // Upload directly to the specified bucket
+            const { error } = await supabase.storage.from(bucketName).upload(filePath, file, { upsert: true });
+
+            if (error) throw error;
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage.from(bucketName).getPublicUrl(filePath);
+
+            // Update editingProject state
+            setEditingProject(prev => {
+                if(!prev) return prev;
+                if (platform) {
+                    return {
+                        ...prev,
+                        metadata: { ...(prev.metadata as any), [platform]: publicUrl }
+                    };
+                } else {
+                    return {
+                        ...prev,
+                        metadata: { ...(prev.metadata as any), [metadataKey]: publicUrl }
+                    };
+                }
+            });
+
+        } catch (error: any) {
+            console.error('Error uploading file:', error.message);
+            alert(`上传失败: ${error.message}\n(提示: 请确保在 Supabase Storage 中创建了名为 "${bucketName}" 的公共 Bucket)`);
+        } finally {
+            setUploadingState(prev => ({ ...prev, [fileKey]: false }));
+            e.target.value = '';
+        }
+    };
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingProject) return;
@@ -155,6 +206,8 @@ const AdminDashboard: React.FC = () => {
             tags: editingProject.tags || [],
             color: editingProject.color,
             icon: editingProject.icon,
+            project_type: editingProject.project_type || 'website',
+            metadata: editingProject.metadata || {}
         };
 
         let error;
@@ -167,7 +220,7 @@ const AdminDashboard: React.FC = () => {
             error = updateError;
         } else {
             // Create
-            const newId = editingProject.title?.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now().toString().slice(-4);
+            const newId = editingProject.title?.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now().toString();
             const { error: insertError } = await supabase
                 .from('projects')
                 .insert({ ...dbData, id: newId });
@@ -321,6 +374,52 @@ const AdminDashboard: React.FC = () => {
         );
     };
 
+    // --- Tag Modal Project Fetching Logic ---
+
+    // Fetch projects for the tag modal (Recent 10 or Search results)
+    const fetchTagModalProjects = async (search: string = '') => {
+        setIsTagProjectLoading(true);
+        let query = supabase.from('projects').select('*');
+
+        if (search.trim()) {
+            query = query.ilike('title', `%${search.trim()}%`).order('created_at', { ascending: false }).limit(20);
+        } else {
+            // Default: Top 10 recent
+            query = query.order('created_at', { ascending: false }).limit(10);
+        }
+
+        const { data, error } = await query;
+
+        if (!error && data) {
+            const mappedProjects: Project[] = data.map((p: any) => ({
+                ...p,
+                projectPath: p.project_path,
+                imagePath: p.image_path,
+            }));
+            setTagModalProjects(mappedProjects);
+        }
+        setIsTagProjectLoading(false);
+    };
+
+    // Initial fetch when modal opens
+    useEffect(() => {
+        if (isAddTagModalOpen) {
+            setTagProjectSearch('');
+            fetchTagModalProjects('');
+        }
+    }, [isAddTagModalOpen]);
+
+    // Debounced search effect
+    useEffect(() => {
+        if (!isAddTagModalOpen) return;
+
+        const timer = setTimeout(() => {
+            fetchTagModalProjects(tagProjectSearch);
+        }, 300); // 300ms debounce
+
+        return () => clearTimeout(timer);
+    }, [tagProjectSearch]);
+
     const openEdit = (project: Project) => {
         setEditingProject(project);
         setIsModalOpen(true);
@@ -335,7 +434,9 @@ const AdminDashboard: React.FC = () => {
             imagePath: '',
             tags: ['NEW'],
             color: 'text-blue-500',
-            icon: 'star'
+            icon: 'star',
+            project_type: 'website',
+            metadata: {}
         });
         setIsModalOpen(true);
     };
@@ -375,18 +476,18 @@ const AdminDashboard: React.FC = () => {
                             </div>
 
                             <div className="flex gap-4">
-                                <button
+                                <OutlineButton
+                                    label="查看站点"
+                                    icon="public"
                                     onClick={() => navigate('/')}
-                                    className="px-6 py-3 rounded-xl border-2 border-[var(--theme-text)] text-[var(--theme-text)] font-bold transition-all hover:bg-[var(--theme-text)] hover:text-[var(--theme-bg)] backdrop-blur-md"
-                                >
-                                    查看站点
-                                </button>
-                                <button
+                                    className="px-6 py-3 border-[var(--theme-text)] text-[var(--theme-text)] hover:bg-white/10 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                                />
+                                <OutlineButton
+                                    label="退出登录"
+                                    icon="logout"
                                     onClick={handleLogout}
-                                    className="px-6 py-3 rounded-xl border-2 border-red-500 text-red-500 font-bold transition-all hover:bg-red-500 hover:text-white backdrop-blur-md"
-                                >
-                                    退出登录
-                                </button>
+                                    className="px-6 py-3 border-red-500 text-red-500 hover:bg-red-500/10 hover:shadow-red-500/30"
+                                />
                             </div>
                         </div>
 
@@ -418,12 +519,12 @@ const AdminDashboard: React.FC = () => {
                         {activeTab === 'projects' && (
                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <div className="flex justify-end">
-                                    <button
+                                    <GradientButton
+                                        label="新建项目"
+                                        icon="add_circle"
                                         onClick={openNew}
-                                        className="px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold shadow-lg shadow-blue-500/30 hover:scale-105 hover:shadow-blue-500/50 transition-all transform"
-                                    >
-                                        + 新建项目
-                                    </button>
+                                        className="px-8 py-3"
+                                    />
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                     {projects.map((project, i) => (
@@ -458,77 +559,100 @@ const AdminDashboard: React.FC = () => {
                         {/* Tags Tab */}
                         {activeTab === 'tags' && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="bg-[#0f172a]/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h2 className="text-2xl font-bold text-white">标签管理</h2>
-                                        <div className="flex items-center gap-4">
-                                            <span className="text-slate-400">{tagsWithCounts.length} 个标签</span>
-                                            <button
-                                                onClick={() => setIsAddTagModalOpen(true)}
-                                                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-all shadow-lg shadow-blue-500/20"
-                                            >
-                                                + 新建标签
-                                            </button>
+                                <div className="relative overflow-hidden bg-[#0f172a]/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+                                    {/* Decorative Background Elements */}
+                                    <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+                                    <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
+
+                                    {/* Header Controls Only */}
+                                    <div className="relative flex justify-end items-center mb-6 gap-4 z-10">
+                                        <div className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-slate-400 text-xs font-bold backdrop-blur-md">
+                                            {tagsWithCounts.length} TAGS
                                         </div>
+                                        <GradientButton
+                                            label="新建标签"
+                                            icon="add_circle"
+                                            onClick={() => setIsAddTagModalOpen(true)}
+                                            className="px-6 py-2 text-sm"
+                                        />
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {tagsWithCounts.map(({ name: tag, count }, i) => (
-                                            <div key={tag} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition-all group">
-                                                <div className="flex items-center gap-3">
-                                                    <div
-                                                        className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold cursor-help"
-                                                        title="关联项目数"
-                                                    >
-                                                        {count}
-                                                    </div>
-                                                    <div>
-                                                        {editingTag?.old === tag ? (
-                                                            <div className="flex items-center gap-2">
-                                                                <input
-                                                                    autoFocus
-                                                                    className="bg-black/50 border border-blue-500/50 rounded px-2 py-1 text-white text-sm focus:outline-none w-32"
-                                                                    value={editingTag.new}
-                                                                    onChange={e => setEditingTag({ ...editingTag, new: e.target.value })}
-                                                                    onKeyDown={e => {
-                                                                        if (e.key === 'Enter') handleRenameTag();
-                                                                        if (e.key === 'Escape') setEditingTag(null);
-                                                                    }}
-                                                                />
-                                                                <button onClick={handleRenameTag} className="text-green-400 hover:text-green-300">
-                                                                    <span className="material-symbols-rounded text-lg">check</span>
-                                                                </button>
-                                                                <button onClick={() => setEditingTag(null)} className="text-red-400 hover:text-red-300">
-                                                                    <span className="material-symbols-rounded text-lg">close</span>
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="font-bold text-slate-200">{tag}</div>
-                                                        )}
-                                                        <div className="text-xs text-slate-500">关联 {count} 个项目</div>
-                                                    </div>
-                                                </div>
+                                    {/* Compact Grid */}
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                                        {tagsWithCounts.map(({ name: tag, count }, i) => {
+                                            // Compact color themes
+                                            const themes = [
+                                                { from: 'from-blue-500/10', to: 'to-cyan-500/10', text: 'text-blue-400', border: 'group-hover:border-blue-500/30' },
+                                                { from: 'from-purple-500/10', to: 'to-pink-500/10', text: 'text-purple-400', border: 'group-hover:border-purple-500/30' },
+                                                { from: 'from-emerald-500/10', to: 'to-teal-500/10', text: 'text-emerald-400', border: 'group-hover:border-emerald-500/30' },
+                                                { from: 'from-amber-500/10', to: 'to-orange-500/10', text: 'text-amber-400', border: 'group-hover:border-amber-500/30' },
+                                                { from: 'from-rose-500/10', to: 'to-red-500/10', text: 'text-rose-400', border: 'group-hover:border-rose-500/30' },
+                                            ];
+                                            const theme = themes[i % themes.length];
 
-                                                {!editingTag && (
-                                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button
-                                                            onClick={() => setEditingTag({ old: tag, new: tag })}
-                                                            className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-blue-400 transition-all"
-                                                            title="重命名标签"
-                                                        >
-                                                            <span className="material-symbols-rounded">edit</span>
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteTag(tag)}
-                                                            className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-red-400 transition-all"
-                                                            title="删除标签"
-                                                        >
-                                                            <span className="material-symbols-rounded">delete</span>
-                                                        </button>
+                                            return (
+                                                <div
+                                                    key={tag}
+                                                    className={`group relative flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.05] backdrop-blur-md border border-white/5 ${theme.border} rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden`}
+                                                >
+                                                    {/* Subtle Background Gradient */}
+                                                    <div className={`absolute inset-0 bg-gradient-to-r ${theme.from} ${theme.to} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`}></div>
+
+                                                    <div className="relative z-10 flex items-center gap-3 flex-1 min-w-0">
+                                                        {/* Icon Badge */}
+                                                        <div className={`w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 flex-none`}>
+                                                            <span className={`material-symbols-rounded text-lg ${theme.text}`}>label</span>
+                                                        </div>
+
+                                                        {/* Tag Name & Edit Input */}
+                                                        <div className="flex-1 min-w-0">
+                                                            {editingTag?.old === tag ? (
+                                                                <div className="flex items-center gap-1">
+                                                                    <input
+                                                                        autoFocus
+                                                                        className="w-full bg-black/50 border border-blue-500/50 rounded px-1.5 py-0.5 text-white text-xs focus:outline-none"
+                                                                        value={editingTag.new}
+                                                                        onChange={e => setEditingTag({ ...editingTag, new: e.target.value })}
+                                                                        onKeyDown={e => {
+                                                                            if (e.key === 'Enter') handleRenameTag();
+                                                                            if (e.key === 'Escape') setEditingTag(null);
+                                                                        }}
+                                                                        onClick={e => e.stopPropagation()}
+                                                                    />
+                                                                    <button onClick={(e) => { e.stopPropagation(); handleRenameTag(); }} className="text-green-400 hover:text-green-300"><span className="material-symbols-rounded text-base">check</span></button>
+                                                                    <button onClick={(e) => { e.stopPropagation(); setEditingTag(null); }} className="text-red-400 hover:text-red-300"><span className="material-symbols-rounded text-base">close</span></button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col">
+                                                                    <div className="font-bold text-slate-200 text-sm truncate" title={tag}>{tag}</div>
+                                                                    <div className="text-[10px] text-slate-500 font-mono">{count} PROJS</div>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                )}
-                                            </div>
-                                        ))}
+
+                                                    {/* Hover Actions */}
+                                                    {!editingTag && (
+                                                        <div className="relative z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity items-center pl-2 border-l border-white/5 ml-2">
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); setEditingTag({ old: tag, new: tag }); }}
+                                                                className="p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-blue-400 transition-colors"
+                                                                title="重命名"
+                                                            >
+                                                                <span className="material-symbols-rounded text-base">edit</span>
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleDeleteTag(tag); }}
+                                                                className="p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-red-400 transition-colors"
+                                                                title="删除"
+                                                            >
+                                                                <span className="material-symbols-rounded text-base">delete</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
@@ -566,7 +690,7 @@ const AdminDashboard: React.FC = () => {
                                                     required
                                                 />
 
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                     <StyledSelect
                                                         label="所属分类"
                                                         value={editingProject.category || 'Work'}
@@ -576,6 +700,17 @@ const AdminDashboard: React.FC = () => {
                                                             { value: 'Life', label: 'Life' },
                                                             { value: 'Learning', label: 'Learning' },
                                                             { value: 'IT', label: 'IT' },
+                                                        ]}
+                                                    />
+
+                                                    <StyledSelect
+                                                        label="作品类型"
+                                                        value={editingProject.project_type || 'website'}
+                                                        onChange={e => setEditingProject({ ...editingProject, project_type: e.target.value as any })}
+                                                        options={[
+                                                            { value: 'website', label: '网站 (Website)' },
+                                                            { value: 'software', label: '软件 (Software)' },
+                                                            { value: 'drawio', label: '图纸 (Drawio)' },
                                                         ]}
                                                     />
 
@@ -612,13 +747,119 @@ const AdminDashboard: React.FC = () => {
                                                 />
 
                                                 <StyledInput
-                                                    label="项目路径 / 链接"
+                                                    label="项目路径 / 链接 (常用于外链)"
                                                     icon="link"
                                                     value={editingProject.projectPath || ''}
                                                     onChange={e => setEditingProject({ ...editingProject, projectPath: e.target.value })}
                                                     placeholder="/project-path"
                                                     className="font-mono text-sm"
                                                 />
+
+                                                {editingProject.project_type === 'drawio' && (
+                                                    <div className="pt-4 border-t border-white/10">
+                                                        <div className="mb-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
+                                                            <span className="font-bold flex items-center gap-1 mb-1"><span className="material-symbols-rounded text-sm">info</span>自动加速通道</span>
+                                                            您可以直接粘贴 Supabase 存储的原生外链 (lcrpvoothmyyqzzzmrir.supabase.co)。前台向用户展示时，系统会自动将它重写为自带的 <code className="bg-black/30 px-1 py-0.5 rounded text-pink-300">/storage/</code> 国内镜像加速地址。
+                                                        </div>
+                                                        <div className="flex gap-2 items-end">
+                                                            <div className="flex-1">
+                                                                <StyledInput
+                                                                    label="Drawio 源文件链接 (XML)"
+                                                                    icon="account_tree"
+                                                                    value={(editingProject.metadata as any)?.fileUrl || ''}
+                                                                    onChange={e => setEditingProject({ ...editingProject, metadata: { ...(editingProject.metadata as any), fileUrl: e.target.value } })}
+                                                                    placeholder="https://..."
+                                                                    className="font-mono text-sm"
+                                                                />
+                                                            </div>
+                                                            <label title="直接上传源文件到 Supabase" className="relative flex items-center justify-center px-4 h-12 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300 transition-colors cursor-pointer group mt-6">
+                                                                {uploadingState['fileUrl'] ? (
+                                                                    <span className="material-symbols-rounded animate-spin">refresh</span>
+                                                                ) : (
+                                                                    <>
+                                                                        <span className="material-symbols-rounded text-lg mr-1 group-hover:-translate-y-1 transition-transform">cloud_upload</span>
+                                                                        <span className="text-sm font-bold whitespace-nowrap">云上传</span>
+                                                                    </>
+                                                                )}
+                                                                <input type="file" className="hidden" disabled={uploadingState['fileUrl']} onChange={(e) => handleFileUpload(e, 'drawio', 'fileUrl')} accept=".xml,.drawio,.svg" />
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {editingProject.project_type === 'software' && (
+                                                    <div className="space-y-4 pt-4 border-t border-white/10">
+                                                        <h4 className="text-white text-sm font-bold opacity-70 mb-2 tracking-widest uppercase flex items-center gap-2">
+                                                            <span className="material-symbols-rounded text-sm">deployed_code</span>
+                                                            软件发布设置
+                                                        </h4>
+                                                        <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
+                                                            <span className="font-bold flex items-center gap-1 mb-1"><span className="material-symbols-rounded text-sm">info</span>自动加速通道</span>
+                                                            您可以直接粘贴 Supabase 存储的原生下载链接。前台对外下载时，系统会自动将它重写借道由于 Caddy 转发的 <code className="bg-black/30 px-1 py-0.5 rounded text-pink-300">/storage/</code> 国内镜像地址。如果是第三方网盘（如七牛、阿里 OSS 等），则会保留直链原样跳转。
+                                                        </div>
+                                                        
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <StyledInput
+                                                                label="最新版本 (例如: v1.0.3)"
+                                                                icon="tag"
+                                                                value={(editingProject.metadata as any)?.latestVersion || ''}
+                                                                onChange={e => setEditingProject({ ...editingProject, metadata: { ...(editingProject.metadata as any), latestVersion: e.target.value } })}
+                                                                placeholder="v1.0.0"
+                                                                className="font-mono text-sm"
+                                                            />
+                                                            <StyledInput
+                                                                label="代码仓库"
+                                                                icon="code"
+                                                                value={(editingProject.metadata as any)?.repoUrl || ''}
+                                                                onChange={e => setEditingProject({ ...editingProject, metadata: { ...(editingProject.metadata as any), repoUrl: e.target.value } })}
+                                                                placeholder="https://github.com/..."
+                                                                className="font-mono text-sm"
+                                                            />
+                                                        </div>
+
+                                                        <div className="flex gap-2 items-end">
+                                                            <div className="flex-1">
+                                                                <StyledInput
+                                                                    label="Windows 下载链接"
+                                                                    icon="desktop_windows"
+                                                                    value={(editingProject.metadata as any)?.windows || ''}
+                                                                    onChange={e => setEditingProject({ ...editingProject, metadata: { ...(editingProject.metadata as any), windows: e.target.value } })}
+                                                                    placeholder="https://..."
+                                                                    className="font-mono text-sm"
+                                                                />
+                                                            </div>
+                                                            <label title="上传安装包" className="relative flex items-center justify-center w-12 h-12 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300 transition-colors cursor-pointer group">
+                                                                {uploadingState['metadata_windows'] ? (
+                                                                    <span className="material-symbols-rounded animate-spin">refresh</span>
+                                                                ) : (
+                                                                    <span className="material-symbols-rounded text-lg group-hover:-translate-y-1 transition-transform">cloud_upload</span>
+                                                                )}
+                                                                <input type="file" className="hidden" disabled={uploadingState['metadata_windows']} onChange={(e) => handleFileUpload(e, 'software_assets', 'metadata', 'windows')} />
+                                                            </label>
+                                                        </div>
+
+                                                        <div className="flex gap-2 items-end">
+                                                            <div className="flex-1">
+                                                                <StyledInput
+                                                                    label="MacOS 下载链接"
+                                                                    icon="desktop_mac"
+                                                                    value={(editingProject.metadata as any)?.macos || ''}
+                                                                    onChange={e => setEditingProject({ ...editingProject, metadata: { ...(editingProject.metadata as any), macos: e.target.value } })}
+                                                                    placeholder="https://..."
+                                                                    className="font-mono text-sm"
+                                                                />
+                                                            </div>
+                                                            <label title="上传安装包" className="relative flex items-center justify-center w-12 h-12 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300 transition-colors cursor-pointer group">
+                                                                {uploadingState['metadata_macos'] ? (
+                                                                    <span className="material-symbols-rounded animate-spin">refresh</span>
+                                                                ) : (
+                                                                    <span className="material-symbols-rounded text-lg group-hover:-translate-y-1 transition-transform">cloud_upload</span>
+                                                                )}
+                                                                <input type="file" className="hidden" disabled={uploadingState['metadata_macos']} onChange={(e) => handleFileUpload(e, 'software_assets', 'metadata', 'macos')} />
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Tags Group */}
@@ -710,39 +951,67 @@ const AdminDashboard: React.FC = () => {
                                         autoFocus
                                     />
 
-                                    {/* Project Selection */}
                                     <div className="space-y-2">
                                         <div className="flex justify-between items-center">
                                             <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">关联项目 <span className="text-[var(--theme-title)] opacity-70 normal-case ml-1 font-normal tracking-normal">(可选)</span></label>
                                             <span className="text-xs font-bold" style={{ color: 'var(--theme-title)' }}>{newTagProjects.length} 已选</span>
                                         </div>
-                                        <div className="h-48 overflow-y-auto custom-scrollbar border border-white/10 rounded-xl bg-black/20 p-2">
-                                            {projects.map(project => (
-                                                <div
-                                                    key={project.id}
-                                                    onClick={() => toggleProjectForNewTag(project.id)}
-                                                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${newTagProjects.includes(project.id)
-                                                        ? 'bg-white/10 border border-white/20'
-                                                        : 'hover:bg-white/5 border border-transparent'
-                                                        }`}
-                                                >
-                                                    <div
-                                                        className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${newTagProjects.includes(project.id)
-                                                            ? 'border-[var(--theme-title)]'
-                                                            : 'border-slate-600'
-                                                            }`}
-                                                        style={newTagProjects.includes(project.id) ? { backgroundColor: 'var(--theme-title)' } : {}}
-                                                    >
-                                                        {newTagProjects.includes(project.id) && (
-                                                            <span className="material-symbols-rounded text-xs text-black font-bold">check</span>
-                                                        )}
-                                                    </div>
-                                                    <span className={`text-sm font-medium ${newTagProjects.includes(project.id) ? 'text-white' : 'text-slate-400'
-                                                        }`}>
-                                                        {project.title}
-                                                    </span>
+
+                                        {/* Search Input for Projects */}
+                                        <div className="relative mb-2">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 material-symbols-rounded text-lg pointer-events-none">search</span>
+                                            <input
+                                                type="text"
+                                                className="w-full bg-black/40 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[var(--theme-title)] focus:ring-1 focus:ring-[var(--theme-title)] transition-all"
+                                                placeholder="搜索项目..."
+                                                value={tagProjectSearch}
+                                                onChange={(e) => setTagProjectSearch(e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div className="h-48 overflow-y-auto custom-scrollbar border border-white/10 rounded-xl bg-black/20 p-2 relative">
+                                            {isTagProjectLoading && (
+                                                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-10 flex items-center justify-center">
+                                                    <span className="material-symbols-rounded animate-spin text-blue-500">sync</span>
                                                 </div>
-                                            ))}
+                                            )}
+
+                                            {tagModalProjects.length === 0 && !isTagProjectLoading ? (
+                                                <div className="h-full flex flex-col items-center justify-center text-slate-500 gap-2">
+                                                    <span className="material-symbols-rounded text-2xl">search_off</span>
+                                                    <span className="text-xs">未找到匹配项目</span>
+                                                </div>
+                                            ) : (
+                                                tagModalProjects.map(project => (
+                                                    <div
+                                                        key={project.id}
+                                                        onClick={() => toggleProjectForNewTag(project.id)}
+                                                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${newTagProjects.includes(project.id)
+                                                            ? 'bg-white/10 border border-white/20'
+                                                            : 'hover:bg-white/5 border border-transparent'
+                                                            }`}
+                                                    >
+                                                        <div
+                                                            className={`w-5 h-5 rounded border flex items-center justify-center transition-all flex-none ${newTagProjects.includes(project.id)
+                                                                ? 'border-[var(--theme-title)]'
+                                                                : 'border-slate-600'
+                                                                }`}
+                                                            style={newTagProjects.includes(project.id) ? { backgroundColor: 'var(--theme-title)' } : {}}
+                                                        >
+                                                            {newTagProjects.includes(project.id) && (
+                                                                <span className="material-symbols-rounded text-xs text-black font-bold">check</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className={`text-sm font-medium truncate ${newTagProjects.includes(project.id) ? 'text-white' : 'text-slate-400'
+                                                                }`}>
+                                                                {project.title}
+                                                            </div>
+                                                            <div className="text-[10px] text-slate-600 truncate">{project.id}</div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
                                         </div>
                                     </div>
                                 </div>

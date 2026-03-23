@@ -1,0 +1,61 @@
+# The Caddyfile is an easy way to configure your Caddy web server.
+#
+# https://caddyserver.com/docs/caddyfile
+
+
+# The configuration below serves a welcome page over HTTP on port 80.  To use
+# your own domain name with automatic HTTPS, ensure your A/AAAA DNS record is
+# pointing to this machine's public IP, then replace `http://` with your domain
+# name.  Refer to the documentation for full instructions on the address
+# specification.
+#
+# https://caddyserver.com/docs/caddyfile/concepts#addresses
+
+inspirejoy.cn www.inspirejoy.cn {
+    # 常用优化：开启 gzip 压缩
+    encode gzip
+
+    # --------------------------------------------------------
+    # 策略 1: 子应用/画廊区域 (使用 handle_path 去除前缀)
+    # --------------------------------------------------------
+    # 访问 https://inspirejoy.cn/app/pdv1 -> 对应磁盘 /www/wwwroot/ij/apps/pdv1
+    handle_path /app/* {
+        root * /www/wwwroot/ij/apps
+        file_server
+    }
+
+    # --------------------------------------------------------
+    # 策略 2: Supabase Storage 反代加速大文件 (我们刚新增的通道)
+    # --------------------------------------------------------
+    # 前端 /storage/xxx 会被秘密代理至 lcrpvoothmyyqzzzmrir.supabase.co 
+    handle_path /storage/* {
+        rewrite * /storage/v1/object/public{path}
+        reverse_proxy https://lcrpvoothmyyqzzzmrir.supabase.co {
+            header_up Host lcrpvoothmyyqzzzmrir.supabase.co
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            flush_interval -1
+        }
+    }
+
+    # --------------------------------------------------------
+    # 策略 3: 宿主主站 (兜底策略)
+    # --------------------------------------------------------
+    handle {
+        root * /www/wwwroot/ij
+        
+        # [重要] 如果宿主是 React/Vue，必须加这一行支持 History 路由
+        try_files {path} /index.html
+        
+        file_server
+    }
+
+    # TLS 证书邮箱配置
+    tls songtao2627@126.com
+}
+
+
+# As an alternative to editing the above site block, you can add your own site
+# block files in the Caddyfile.d directory, and they will be included as long
+# as they use the .caddyfile extension.
+import Caddyfile.d/*.caddyfile

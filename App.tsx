@@ -109,6 +109,32 @@ const HomePage: React.FC = () => {
     </div>
   );
   const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+  const handleCardClick = (project: Project) => {
+    if (project.project_type === 'software' || project.project_type === 'drawio') {
+      setSelectedProject(project);
+    } else {
+      window.location.href = project.projectPath;
+    }
+  };
+
+  const closeViewer = () => setSelectedProject(null);
+
+  // Auto-rewrite Supabase Storage URLs to our domestic Caddy proxy route
+  const getProxiedUrl = (originalUrl: string) => {
+    if (!originalUrl) return '';
+    try {
+      const urlObj = new URL(originalUrl);
+      // Auto-detect Supabase storage links and rewrite them to the local /storage/ path
+      if (urlObj.hostname === 'lcrpvoothmyyqzzzmrir.supabase.co' && urlObj.pathname.startsWith('/storage/v1/object/public/')) {
+        const remainingPath = urlObj.pathname.replace('/storage/v1/object/public/', '');
+        // We use relative path so it naturally points to inspirejoy.cn/storage/...
+        return `/storage/${remainingPath}`;
+      }
+    } catch (e) { /* ignore invalid urls */ }
+    return originalUrl;
+  };
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -233,6 +259,7 @@ const HomePage: React.FC = () => {
                 key={`${p.id}-${i}`}
                 className="rail-item absolute top-0 left-0 w-[320px] sm:w-[420px] aspect-[16/10] flex-shrink-0 rounded-xl shadow-lg shadow-slate-300/60 bg-white border border-white/50 overflow-hidden transform cursor-pointer group"
                 style={{ left: i * (420 + 24) }} // Initial simple positioning, GSAP takes over
+                onClick={() => handleCardClick(p)}
               >
                 <img
                   src={p.imagePath}
@@ -248,6 +275,12 @@ const HomePage: React.FC = () => {
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold bg-white text-slate-900`}>
                       {p.category}
                     </span>
+                    {p.project_type && p.project_type !== 'website' && (
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white border border-white/30 flex items-center gap-1 ${p.project_type === 'software' ? 'bg-pink-500/20 text-pink-300' : 'bg-cyan-500/20 text-cyan-300'}`}>
+                        <span className="material-symbols-rounded text-[12px]">{p.project_type === 'software' ? 'deployed_code' : 'account_tree'}</span>
+                        {p.project_type === 'software' ? '软件' : '图纸'}
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-white font-display font-bold text-xl">{p.title}</h3>
                   <p className="text-slate-300 text-xs mt-1 line-clamp-1">{p.description}</p>
@@ -272,7 +305,7 @@ const HomePage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 auto-rows-[450px]">
               {getProjects('Work').map((project, i) => (
                 <div key={project.id} className={`tilt-card-wrapper opacity-0 translate-y-8 ${i % 2 === 0 ? 'lg:translate-y-12' : ''} transition-transform duration-500`}>
-                  <TiltCard project={project} />
+                  <TiltCard project={project} onClick={handleCardClick} />
                 </div>
               ))}
             </div>
@@ -289,11 +322,11 @@ const HomePage: React.FC = () => {
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 auto-rows-[400px]">
               <div className="md:col-span-2 md:row-span-2 min-h-[500px] tilt-card-wrapper opacity-0 translate-y-8">
-                {getProjects('Life')[0] && <TiltCard project={getProjects('Life')[0]} />}
+                {getProjects('Life')[0] && <TiltCard project={getProjects('Life')[0]} onClick={handleCardClick} />}
               </div>
               {getProjects('Life').slice(1).map(p => (
                 <div key={p.id} className="tilt-card-wrapper opacity-0 translate-y-8">
-                  <TiltCard project={p} />
+                  <TiltCard project={p} onClick={handleCardClick} />
                 </div>
               ))}
             </div>
@@ -311,7 +344,7 @@ const HomePage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 auto-rows-[400px]">
               {getProjects('Learning').map((project) => (
                 <div key={project.id} className="tilt-card-wrapper opacity-0 translate-y-8">
-                  <TiltCard project={project} />
+                  <TiltCard project={project} onClick={handleCardClick} />
                 </div>
               ))}
             </div>
@@ -329,7 +362,7 @@ const HomePage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 auto-rows-[420px]">
               {getProjects('IT').map((project) => (
                 <div key={project.id} className="tilt-card-wrapper opacity-0 translate-y-8">
-                  <TiltCard project={project} />
+                  <TiltCard project={project} onClick={handleCardClick} />
                 </div>
               ))}
             </div>
@@ -337,6 +370,77 @@ const HomePage: React.FC = () => {
         </section>
 
       </main>
+
+      {/* MODALS */}
+      {selectedProject && selectedProject.project_type === 'drawio' && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm">
+          <div className="w-full h-full max-w-7xl max-h-[90vh] mx-auto relative bg-white/10 rounded-2xl overflow-hidden border border-white/20 shadow-2xl flex flex-col">
+            <div className="flex justify-between items-center px-4 py-3 bg-slate-900 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-rounded text-cyan-400">account_tree</span>
+                <h3 className="text-white font-bold">{selectedProject.title}</h3>
+              </div>
+              <button onClick={closeViewer} className="text-white hover:text-pink-500 transition-colors">
+                <span className="material-symbols-rounded">close</span>
+              </button>
+            </div>
+            <div className="flex-1 bg-white relative">
+              <iframe
+                src={`/drawio/index.html?lightbox=1&highlight=0000ff&edit=_blank&layers=1&url=${encodeURIComponent(getProxiedUrl((selectedProject.metadata as any)?.fileUrl || ''))}`}
+                className="w-full h-full border-none"
+                title="Drawio Viewer"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedProject && selectedProject.project_type === 'software' && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4">
+          <div className="w-full max-w-2xl bg-slate-800 rounded-3xl overflow-hidden border border-white/20 shadow-2xl relative">
+            <button onClick={closeViewer} className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-slate-900/50 hover:bg-pink-500 text-white transition-colors">
+              <span className="material-symbols-rounded">close</span>
+            </button>
+            <div className="h-48 overflow-hidden relative">
+              <img src={selectedProject.imagePath} alt="cover" className="w-full h-full object-cover opacity-60" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-800 to-transparent"></div>
+              <div className="absolute bottom-6 left-6 flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-white shadow-lg flex items-center justify-center">
+                  <span className={`material-symbols-rounded text-4xl ${selectedProject.color}`}>{selectedProject.icon}</span>
+                </div>
+                <div>
+                  <h2 className="text-3xl font-display font-black text-white leading-none">{selectedProject.title}</h2>
+                  <div className="text-slate-400 mt-1 font-bold">{(selectedProject.metadata as any)?.latestVersion || 'v1.0.0'}</div>
+                </div>
+              </div>
+            </div>
+            <div className="p-8">
+              <p className="text-slate-300 mb-8">{selectedProject.description}</p>
+              
+              <div className="flex flex-col gap-3">
+                {['windows', 'macos', 'linux'].map(plat => {
+                  let rawUrl = (selectedProject.metadata as any)?.[plat] || ((selectedProject.metadata as any)?.platforms?.includes(plat) ? '#' : null);
+                  if (rawUrl === null) return null;
+                  const finalUrl = getProxiedUrl(rawUrl);
+                  
+                  return (
+                    <a key={plat} href={finalUrl} target="_blank" rel="noreferrer" className="flex items-center justify-between p-4 rounded-xl bg-slate-900 border border-slate-700 hover:border-pink-500 transition-colors group">
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-rounded text-slate-400 group-hover:text-pink-500">
+                          {plat === 'windows' ? 'desktop_windows' : plat === 'macos' ? 'desktop_mac' : 'terminal'}
+                        </span>
+                        <span className="text-white font-bold capitalize">Download for {plat}</span>
+                      </div>
+                      <span className="material-symbols-rounded text-slate-500 group-hover:text-pink-500">download</span>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

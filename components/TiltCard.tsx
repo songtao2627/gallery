@@ -5,9 +5,10 @@ import { useGSAP } from '@gsap/react';
 
 interface TiltCardProps {
   project: Project;
+  onClick?: (project: Project) => void;
 }
 
-const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
+const TiltCard: React.FC<TiltCardProps> = ({ project, onClick }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const sheenRef = useRef<HTMLDivElement>(null);
@@ -91,6 +92,12 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
       href={project.projectPath}
       className="block h-full outline-none perspective-1000"
       target="_self"
+      onClick={(e) => {
+        if (onClick) {
+          e.preventDefault();
+          onClick(project);
+        }
+      }}
     >
       <div
         ref={cardRef}
@@ -139,11 +146,30 @@ const TiltCard: React.FC<TiltCardProps> = ({ project }) => {
               </span>
             </div>
 
+            {/* Project Type Badge */}
+            {project.project_type && project.project_type !== 'website' && (
+              <div
+                className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/20 text-white text-[10px] font-black tracking-widest shadow-lg flex items-center gap-1 z-40"
+                style={{ transformStyle: 'preserve-3d', transform: 'translateZ(40px)' }}
+              >
+                {project.project_type === 'software' ? (
+                  <><span className="material-symbols-rounded text-[14px] text-pink-400">deployed_code</span> 软件应用</>
+                ) : (
+                  <><span className="material-symbols-rounded text-[14px] text-cyan-400">account_tree</span> 架构图纸</>
+                )}
+              </div>
+            )}
+
             {/* "View" Button Pill - appears on hover */}
             <div className="absolute bottom-4 right-4 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-30">
-              <div className="px-6 py-3 bg-slate-900 text-white font-black rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.4)] border border-white/30 flex items-center gap-2 text-sm hover:scale-110 hover:bg-black hover:border-white/50 transition-all duration-300 cursor-pointer">
-                <span>访问</span>
-                <span className="material-symbols-rounded text-sm font-black">arrow_outward</span>
+              <div className="group/btn relative px-6 py-3 bg-slate-900 text-white font-black rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.4)] border border-white/30 flex items-center gap-2 text-sm hover:scale-110 hover:bg-black hover:border-white/50 transition-all duration-300 cursor-pointer overflow-hidden">
+                <div className="absolute inset-0 bg-white/30 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700 skew-x-[-12deg]"></div>
+                <span className="relative z-10">
+                  {project.project_type === 'software' ? '查看发布' : project.project_type === 'drawio' ? '全屏预览' : '访问'}
+                </span>
+                <span className="material-symbols-rounded text-sm font-black relative z-10">
+                  {project.project_type === 'software' ? 'download' : project.project_type === 'drawio' ? 'fullscreen' : 'arrow_outward'}
+                </span>
               </div>
             </div>
           </div>

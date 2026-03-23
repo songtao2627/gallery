@@ -143,17 +143,19 @@ const AdminTiltCard: React.FC<AdminTiltCardProps> = ({ project, onEdit, onDelete
                         <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-30 bg-gradient-to-t from-black/80 to-transparent flex items-end justify-center gap-3 pb-6">
                             <button
                                 onClick={(e) => { e.stopPropagation(); onEdit(project); }}
-                                className="px-4 py-2 bg-blue-600/90 hover:bg-blue-500 backdrop-blur-md rounded-xl text-white font-bold text-sm shadow-lg hover:shadow-blue-500/50 transition-all flex items-center gap-2 transform hover:scale-105"
+                                className="group/edit relative px-4 py-2 bg-blue-600/90 hover:bg-blue-500 backdrop-blur-md rounded-xl text-white font-bold text-sm shadow-lg hover:shadow-blue-500/50 transition-all flex items-center gap-2 transform hover:scale-105 overflow-hidden"
                             >
-                                <span className="material-symbols-rounded text-sm">edit</span>
-                                Edit
+                                <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover/edit:translate-x-[100%] transition-transform duration-700 skew-x-[-12deg]"></div>
+                                <span className="material-symbols-rounded text-sm relative z-10">edit</span>
+                                <span className="relative z-10">Edit</span>
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}
-                                className="px-4 py-2 bg-red-600/90 hover:bg-red-500 backdrop-blur-md rounded-xl text-white font-bold text-sm shadow-lg hover:shadow-red-500/50 transition-all flex items-center gap-2 transform hover:scale-105"
+                                className="group/del relative px-4 py-2 bg-red-600/90 hover:bg-red-500 backdrop-blur-md rounded-xl text-white font-bold text-sm shadow-lg hover:shadow-red-500/50 transition-all flex items-center gap-2 transform hover:scale-105 overflow-hidden"
                             >
-                                <span className="material-symbols-rounded text-sm">delete</span>
-                                Delete
+                                <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover/del:translate-x-[100%] transition-transform duration-700 skew-x-[-12deg]"></div>
+                                <span className="material-symbols-rounded text-sm relative z-10">delete</span>
+                                <span className="relative z-10">Delete</span>
                             </button>
                         </div>
                     )}
